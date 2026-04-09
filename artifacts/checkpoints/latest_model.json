@@ -1,0 +1,13 @@
+{
+  "adapter_path": "",
+  "base_model": "",
+  "config_paths": [],
+  "merged_export_path": null,
+  "metrics_paths": [],
+  "report_paths": [],
+  "schema_version": null,
+  "stage": "uninitialized",
+  "status": "not_promoted",
+  "timestamp_utc": ""
+}
+

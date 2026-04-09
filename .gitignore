@@ -1,0 +1,34 @@
+docs/
+AGENTS.md
+.codex/
+
+# Python cache and build outputs
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Notebook state
+.ipynb_checkpoints/
+
+# Local experiment outputs
+artifacts/checkpoints/runtime/
+artifacts/reports/runtime/
+data/interim/runtime/
+data/eval/runtime/
+runtime/
+
+# OS/editor noise
+.DS_Store

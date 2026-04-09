@@ -1,0 +1,11 @@
+# DPO configuration placeholder.
+# sft_checkpoint:
+# preference_manifest:
+# output_dir:
+# beta:
+# learning_rate:
+# num_train_epochs:
+# per_device_train_batch_size:
+# max_prompt_length:
+# max_completion_length:
+

@@ -1,0 +1,11 @@
+# Evaluation configuration placeholder.
+# dataset_manifest:
+# schema_version:
+# prompt_template:
+# metrics_output_path:
+# sample_limit:
+# generation:
+#   temperature:
+#   top_p:
+#   max_new_tokens:
+

@@ -1,0 +1,13 @@
+# SFT configuration placeholder.
+# dataset_manifest:
+# output_dir:
+# max_seq_length:
+# learning_rate:
+# num_train_epochs:
+# per_device_train_batch_size:
+# gradient_accumulation_steps:
+# lora:
+#   r:
+#   alpha:
+#   dropout:
+

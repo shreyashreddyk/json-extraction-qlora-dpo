@@ -1,0 +1,9 @@
+# Inference and benchmarking placeholder.
+# model_name_or_path:
+# adapter_name_or_path:
+# served_backend:
+# served_endpoint:
+# benchmark_dataset_manifest:
+# concurrency_levels:
+# max_new_tokens:
+
