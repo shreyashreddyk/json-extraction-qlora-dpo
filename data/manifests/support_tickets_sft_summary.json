@@ -1,0 +1,32 @@
+{
+  "config_path": "configs/sft.yaml",
+  "input_path": "data/fixtures/support_tickets.jsonl",
+  "issue_category_counts": {
+    "account_access": 1,
+    "billing": 2,
+    "feature_request": 1,
+    "general_question": 2,
+    "integration": 1,
+    "other": 1,
+    "technical_bug": 2
+  },
+  "messages_output": "data/manifests/support_tickets_sft_messages.jsonl",
+  "priority_counts": {
+    "high": 2,
+    "low": 3,
+    "medium": 2,
+    "urgent": 3
+  },
+  "prompt_completion_output": "data/manifests/support_tickets_sft_prompt_completion.jsonl",
+  "schema": {
+    "name": "support_ticket_extraction",
+    "version": "1.0.0"
+  },
+  "source_format": "json_extraction",
+  "split_counts": {
+    "eval": 3,
+    "train": 7
+  },
+  "total_records": 10,
+  "train_record_count": 7
+}

@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from json_ft.metrics import categorical_exact_match, json_validity_rate, schema_pass_rate
-from json_ft.schemas import build_placeholder_schema
+from json_ft.schemas import build_support_ticket_schema
 
 
 class MetricsTest(unittest.TestCase):
@@ -13,11 +13,27 @@ class MetricsTest(unittest.TestCase):
         value = json_validity_rate(['{"ok": true}', "not-json"])
         self.assertEqual(value, 0.5)
 
-    def test_schema_pass_rate_uses_placeholder_schema(self) -> None:
-        schema = build_placeholder_schema()
+    def test_schema_pass_rate_uses_support_ticket_schema(self) -> None:
+        schema = build_support_ticket_schema()
         payloads = [
-            {"customer_name": "Ava", "issue_type": "billing", "priority": "high"},
-            {"customer_name": "Ben", "issue_type": "access"},
+            {
+                "summary": "Customer reports a duplicate charge and wants a refund.",
+                "issue_category": "billing",
+                "priority": "high",
+                "product_area": "billing_portal",
+                "customer": {"name": "Ava", "account_id": "AC-100", "plan_tier": "pro"},
+                "sentiment": "negative",
+                "requires_human_followup": True,
+                "actions_requested": ["Refund the duplicate invoice charge"],
+            },
+            {
+                "summary": "Customer cannot access the account after an MFA reset.",
+                "issue_category": "account_access",
+                "priority": "urgent",
+                "customer": {"name": "Ben", "account_id": "BIZ-204", "plan_tier": "business"},
+                "sentiment": "negative",
+                "requires_human_followup": True,
+            },
         ]
 
         self.assertEqual(schema_pass_rate(payloads, schema), 0.5)

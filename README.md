@@ -97,22 +97,26 @@ The setup notebook will:
 - sync the uploaded repo content into a Drive-backed runtime workspace
 - print resolved runtime paths
 
-### 3. Inspect the scaffold
+### 3. Inspect the repo and data contract
 
 ```bash
 make tree
 make validate-scaffold
+./.venv/bin/python scripts/prepare_sft_data.py --input-path data/fixtures/support_tickets.jsonl
+./.venv/bin/python scripts/prepare_eval_data.py --input-path data/fixtures/support_tickets.jsonl
 ```
 
-### 4. Start the next step
+### 4. Review the generated artifacts
 
-The next implementation step should focus on dataset preparation and schema
-contract finalization:
+The first real data-prep version now generates:
 
-- define the concrete extraction schema in `src/json_ft/schemas.py`
-- wire dataset manifests into `data/manifests/`
-- implement `scripts/prepare_sft_data.py` and `scripts/prepare_eval_data.py`
-- update `docs/04_eval_plan.md` with the real dataset slice and metrics path
+- `data/manifests/support_tickets_sft_prompt_completion.jsonl`
+- `data/manifests/support_tickets_sft_messages.jsonl`
+- `data/manifests/support_tickets_eval_manifest.jsonl`
+- summary JSON files for SFT and eval prep
+
+Open [`notebooks/00_data_audit.ipynb`](notebooks/00_data_audit.ipynb) to inspect
+the schema, class balance, and example exports.
 
 ## Design Principles
 
@@ -147,16 +151,19 @@ That manifest points to the promoted adapter or merged export path outside Git.
 This repository currently provides:
 
 - a production-style Python package layout
-- config placeholders for future training and evaluation
-- script entrypoints with explicit runtime-root and artifact contracts
+- a strict support-ticket extraction schema implemented with Pydantic
+- validated dataset adapters for canonical, prompt-completion, conversational,
+  Nemotron-style, and eval manifest formats
+- script entrypoints for generating SFT and eval manifests
+- generated synthetic fixture data and repo-side manifests under `data/manifests/`
 - Colab runtime helpers for path resolution, sync, and latest-model tracking
-- Colab-oriented notebooks for setup, eval, training review, and benchmarking
-- local documentation skeletons for planning and learning
-- minimal tests for core helper behavior
+- Colab-oriented notebooks for setup, data audit, eval, training review, and benchmarking
+- local documentation for the data contract and evaluation plan
+- deterministic tests for schema validation, formatting, preference placeholders,
+  and CLI smoke paths
 
 It intentionally does not yet provide:
 
-- a committed dataset
-- a finalized schema definition
 - runnable SFT or DPO training logic
 - model benchmarking results
+- a real external raw-data integration

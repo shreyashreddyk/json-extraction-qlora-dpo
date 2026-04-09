@@ -28,7 +28,7 @@ def schema_pass_rate(
     payloads: Iterable[dict],
     schema: SchemaConstraint,
 ) -> float:
-    """Measure the share of payloads that pass schema-level key checks."""
+    """Measure the share of payloads that pass full schema validation."""
 
     items = list(payloads)
     if not items:
@@ -53,4 +53,3 @@ def categorical_exact_match(
         if prediction.get(field_name) == reference.get(field_name):
             matched += 1
     return matched / len(reference_items)
-

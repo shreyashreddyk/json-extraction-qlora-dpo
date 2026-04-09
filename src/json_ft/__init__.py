@@ -1,30 +1,53 @@
-"""Reusable package for schema-constrained JSON extraction experiments.
+"""Reusable package for schema-constrained JSON extraction experiments."""
 
-The modules in this package are intentionally lightweight during the scaffold
-phase. They define boundaries, contracts, and a few deterministic helpers so
-the repository is ready for dataset preparation and later model work.
-"""
-
-from .dataset_adapters import PreferenceExample, RawRecord, SFTExample
+from .dataset_adapters import (
+    JsonExtractionSample,
+    MessagesSFTExample,
+    NemotronSFTExample,
+    PreferenceExample,
+    SFTExample,
+)
 from .manifests import LatestModelManifest, load_latest_model_manifest, save_latest_model_manifest
 from .metrics import categorical_exact_match, json_validity_rate, schema_pass_rate
 from .runtime import RuntimeContext, detect_colab, resolve_runtime_context
-from .schemas import SchemaConstraint, ValidationResult, build_placeholder_schema
+from .schemas import (
+    CustomerContext,
+    IssueCategory,
+    PlanTier,
+    PriorityLevel,
+    ProductArea,
+    SchemaConstraint,
+    SentimentLabel,
+    SupportTicketExtraction,
+    ValidationIssue,
+    ValidationResult,
+    build_support_ticket_schema,
+)
 
 __all__ = [
-    "PreferenceExample",
-    "RawRecord",
-    "SFTExample",
+    "CustomerContext",
+    "IssueCategory",
+    "JsonExtractionSample",
     "LatestModelManifest",
-    "load_latest_model_manifest",
-    "save_latest_model_manifest",
+    "MessagesSFTExample",
+    "NemotronSFTExample",
+    "PlanTier",
+    "PreferenceExample",
+    "PriorityLevel",
+    "ProductArea",
     "RuntimeContext",
-    "detect_colab",
-    "resolve_runtime_context",
     "SchemaConstraint",
+    "SentimentLabel",
+    "SFTExample",
+    "SupportTicketExtraction",
+    "ValidationIssue",
     "ValidationResult",
-    "build_placeholder_schema",
+    "build_support_ticket_schema",
     "categorical_exact_match",
+    "detect_colab",
     "json_validity_rate",
+    "load_latest_model_manifest",
+    "resolve_runtime_context",
+    "save_latest_model_manifest",
     "schema_pass_rate",
 ]
