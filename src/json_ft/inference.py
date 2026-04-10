@@ -30,6 +30,7 @@ class InferenceRequest:
     top_p: float = 1.0
     do_sample: bool = False
     prompt_source: str = "messages"
+    seed: int | None = None
 
 
 @dataclass(frozen=True)
@@ -190,6 +191,8 @@ def _build_generation_metadata(
     if request.do_sample:
         metadata["temperature"] = request.temperature
         metadata["top_p"] = request.top_p
+    if request.seed is not None:
+        metadata["seed"] = request.seed
     return metadata
 
 
@@ -246,6 +249,7 @@ class LocalTransformersInferenceBackend:
         cls,
         model_name_or_path: str,
         *,
+        adapter_path: str | None = None,
         revision: str | None = None,
         trust_remote_code: bool = False,
         torch_dtype: str | None = "auto",
@@ -268,6 +272,16 @@ class LocalTransformersInferenceBackend:
                 "transformers is required for local baseline inference. "
                 "Install it in Colab or your local environment before running eval_model.py."
             ) from exc
+        if adapter_path:
+            try:
+                from peft import PeftModel
+            except ModuleNotFoundError as exc:
+                raise RuntimeError(
+                    "peft is required to load adapter-backed inference. "
+                    "Install it in Colab or your local environment before using adapter_path."
+                ) from exc
+        else:
+            PeftModel = None
 
         use_cuda = bool(torch.cuda.is_available())
         resolved_dtype = _resolve_torch_dtype(torch, torch_dtype, use_cuda)
@@ -295,11 +309,13 @@ class LocalTransformersInferenceBackend:
                 torch_dtype=resolved_dtype,
                 **common_model_kwargs,
             )
+        if adapter_path and PeftModel is not None:
+            model = PeftModel.from_pretrained(model, adapter_path)
         if device_map is None and use_cuda:
             model = model.to("cuda")
         model.eval()
         return cls(
-            model_name_or_path=model_name_or_path,
+            model_name_or_path=adapter_path or model_name_or_path,
             tokenizer=tokenizer,
             model=model,
             schema=schema,
@@ -325,6 +341,11 @@ class LocalTransformersInferenceBackend:
         """Run a single deterministic generation and return eval-ready metadata."""
 
         import torch
+
+        if request.seed is not None:
+            torch.manual_seed(request.seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(request.seed)
 
         prompt_text = self.render_prompt(request)
         encoded = self.tokenizer(prompt_text, return_tensors="pt")
@@ -398,6 +419,7 @@ def build_inference_backend(
     backend: str,
     model_name_or_path: str,
     *,
+    adapter_path: str | None = None,
     revision: str | None = None,
     trust_remote_code: bool = False,
     torch_dtype: str | None = "auto",
@@ -409,6 +431,7 @@ def build_inference_backend(
     if backend == "local-transformers":
         return LocalTransformersInferenceBackend.from_model_name_or_path(
             model_name_or_path,
+            adapter_path=adapter_path,
             revision=revision,
             trust_remote_code=trust_remote_code,
             torch_dtype=torch_dtype,

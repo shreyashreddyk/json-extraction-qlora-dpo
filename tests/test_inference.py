@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 import sys
 from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -9,6 +10,7 @@ from json_ft.inference import (
     InferenceRequest,
     _build_generation_config,
     _build_generation_metadata,
+    build_inference_backend,
     extract_first_json_object,
     parse_model_output_text,
 )
@@ -63,6 +65,19 @@ class InferenceParsingTest(unittest.TestCase):
             },
         )
 
+    def test_generation_metadata_includes_seed_when_present(self) -> None:
+        request = InferenceRequest(
+            max_new_tokens=64,
+            temperature=0.7,
+            top_p=0.9,
+            do_sample=True,
+            seed=23,
+        )
+
+        metadata = _build_generation_metadata(request, pad_token_id=5)
+
+        self.assertEqual(metadata["seed"], 23)
+
     def test_generation_config_clears_sampling_only_fields_when_disabled(self) -> None:
         base_config = SimpleNamespace(
             max_new_tokens=32,
@@ -101,3 +116,17 @@ class InferenceParsingTest(unittest.TestCase):
         self.assertEqual(config.temperature, 0.6)
         self.assertEqual(config.top_p, 0.8)
         self.assertEqual(config.top_k, 20)
+
+    def test_build_inference_backend_forwards_adapter_path(self) -> None:
+        with patch("json_ft.inference.LocalTransformersInferenceBackend.from_model_name_or_path") as patched:
+            patched.return_value = "fake-backend"
+
+            backend = build_inference_backend(
+                "local-transformers",
+                "fake-model",
+                adapter_path="/tmp/adapter",
+            )
+
+        self.assertEqual(backend, "fake-backend")
+        _, kwargs = patched.call_args
+        self.assertEqual(kwargs["adapter_path"], "/tmp/adapter")

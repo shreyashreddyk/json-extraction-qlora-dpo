@@ -1,11 +1,48 @@
-# DPO configuration placeholder.
-# sft_checkpoint:
-# preference_manifest:
-# output_dir:
-# beta:
-# learning_rate:
-# num_train_epochs:
-# per_device_train_batch_size:
-# max_prompt_length:
-# max_completion_length:
+model:
+  latest_model_manifest: artifacts/checkpoints/latest_model.json
+  base_model: null
+  adapter_path: null
+  revision: null
+  trust_remote_code: false
+  torch_dtype: auto
+  device_map: null
 
+pair_generation:
+  input_path: data/fixtures/support_tickets.jsonl
+  source_format: json_extraction
+  source_split: train
+  prompt_source: messages
+  candidate_count: 6
+  sample_limit: null
+  generation:
+    max_new_tokens: 256
+    temperature: 0.8
+    top_p: 0.95
+    do_sample: true
+    base_seed: 17
+
+profiles:
+  dev:
+    pair_generation:
+      candidate_count: 3
+      sample_limit: 3
+
+  full:
+    pair_generation:
+      candidate_count: 6
+      sample_limit: null
+
+artifacts:
+  pairs_filename: "{run_name}_dpo_pairs.jsonl"
+  audit_filename: "{run_name}_preference_audit.jsonl"
+  summary_filename: "{run_name}_preference_summary.json"
+
+training:
+  preference_manifest: null
+  beta: 0.1
+  learning_rate: 5.0e-6
+  num_train_epochs: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 4
+  max_prompt_length: 1024
+  max_completion_length: 256
