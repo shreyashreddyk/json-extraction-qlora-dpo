@@ -1,13 +1,19 @@
 {
-  "adapter_path": "",
-  "base_model": "",
-  "config_paths": [],
+  "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-qwen2.5-1.5b-qlora-v1/adapter",
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "config_paths": [
+    "/content/drive/MyDrive/json-ft-source/configs/sft.yaml"
+  ],
   "merged_export_path": null,
-  "metrics_paths": [],
-  "report_paths": [],
-  "schema_version": null,
-  "stage": "uninitialized",
-  "status": "not_promoted",
-  "timestamp_utc": ""
+  "metrics_paths": [
+    "/content/drive/MyDrive/json-ft-source/artifacts/metrics/sft-qwen2.5-1.5b-qlora-v1_sft_summary.json",
+    "/content/drive/MyDrive/json-ft-source/artifacts/metrics/sft-qwen2.5-1.5b-qlora-v1_sft_history.json"
+  ],
+  "report_paths": [
+    "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-qwen2.5-1.5b-qlora-v1_adapter_manifest.json"
+  ],
+  "schema_version": "1.0.0",
+  "stage": "sft",
+  "status": "ready",
+  "timestamp_utc": "2026-04-10T17:07:42.751359+00:00"
 }
-
