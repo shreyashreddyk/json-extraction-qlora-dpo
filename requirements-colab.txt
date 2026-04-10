@@ -1,8 +1,10 @@
 # Pinned direct Colab dependencies for a reproducible runtime stack.
 accelerate==1.13.0
+bitsandbytes==0.48.1
 datasets==4.8.4
 evaluate==0.4.6
 jedi==0.19.2
+matplotlib==3.10.7
 opentelemetry-api==1.38.0
 opentelemetry-exporter-otlp==1.38.0
 opentelemetry-exporter-otlp-proto-common==1.38.0

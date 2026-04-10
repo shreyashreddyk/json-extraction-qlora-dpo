@@ -35,6 +35,7 @@ class RuntimeContext:
             self.scratch_root,
             self.checkpoints_dir,
             self.metrics_dir,
+            self.plots_dir,
             self.reports_dir,
             self.logs_dir,
             self.exports_dir,
@@ -49,6 +50,10 @@ class RuntimeContext:
     @property
     def metrics_dir(self) -> Path:
         return self.persistent_root / "metrics"
+
+    @property
+    def plots_dir(self) -> Path:
+        return self.persistent_root / "plots"
 
     @property
     def reports_dir(self) -> Path:
@@ -75,6 +80,7 @@ class RuntimeContext:
             f"runtime_root={self.runtime_root}",
             f"persistent_root={self.persistent_root}",
             f"scratch_root={self.scratch_root}",
+            f"plots_dir={self.plots_dir}",
             f"stage={self.stage}",
             f"run_name={self.run_name}",
             f"run_dir={self.run_dir}",
@@ -127,6 +133,7 @@ def resolve_repo_artifact_targets(repo_root: str | Path) -> dict[str, Path]:
     root = Path(repo_root).resolve()
     return {
         "metrics": root / "artifacts" / "metrics",
+        "plots": root / "artifacts" / "plots",
         "reports": root / "artifacts" / "reports",
         "checkpoints": root / "artifacts" / "checkpoints",
     }
@@ -137,4 +144,3 @@ def ensure_paths(paths: Iterable[Path]) -> None:
 
     for path in paths:
         path.mkdir(parents=True, exist_ok=True)
-

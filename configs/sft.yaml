@@ -1,13 +1,89 @@
-# SFT configuration placeholder.
-# dataset_manifest:
-# output_dir:
-# max_seq_length:
-# learning_rate:
-# num_train_epochs:
-# per_device_train_batch_size:
-# gradient_accumulation_steps:
-# lora:
-#   r:
-#   alpha:
-#   dropout:
+# Stage 1 supervised fine-tuning contract for single-GPU Colab runs.
+# The repo keeps manifests in messages form, then normalizes them into
+# conversational prompt-completion rows so TRL can apply the model chat template
+# and train only on the assistant completion tokens.
 
+model:
+  model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+  trust_remote_code: false
+  # Qwen chat templates terminate assistant turns with <|im_end|>.
+  eos_token: "<|im_end|>"
+
+data:
+  train_manifest: data/manifests/support_tickets_sft_messages.jsonl
+  eval_manifest: data/manifests/support_tickets_eval_manifest.jsonl
+  dataset_format: messages
+  max_seq_length: 1024
+
+quantization:
+  enabled: true
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+  compute_dtype: auto
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  bias: none
+  task_type: CAUSAL_LM
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  weight_decay: 0.0
+  optim: paged_adamw_32bit
+  gradient_checkpointing: true
+  packing: false
+  per_device_eval_batch_size: 1
+  save_total_limit: 2
+  report_to: []
+  completion_only_loss: true
+
+profiles:
+  dev:
+    # Keep the smoke run intentionally tiny so the Colab boot path can be
+    # validated before paying for a longer tuning session.
+    data:
+      train_sample_limit: 4
+      eval_sample_limit: 2
+    training:
+      # Dev effective batch size = 1 x 2 = 2.
+      max_steps: 5
+      per_device_train_batch_size: 1
+      gradient_accumulation_steps: 2
+      logging_steps: 1
+      eval_strategy: steps
+      eval_steps: 2
+      save_strategy: steps
+      save_steps: 2
+
+  full:
+    data:
+      train_sample_limit: null
+      eval_sample_limit: null
+    training:
+      # Full effective batch size = 1 x 8 = 8.
+      num_train_epochs: 3
+      per_device_train_batch_size: 1
+      gradient_accumulation_steps: 8
+      logging_steps: 5
+      eval_strategy: epoch
+      save_strategy: epoch
+
+artifacts:
+  summary_filename: "{run_name}_sft_summary.json"
+  history_filename: "{run_name}_sft_history.json"
+  loss_curve_filename: "{run_name}_sft_loss_curve.png"
+  eval_loss_curve_filename: "{run_name}_sft_eval_loss_curve.png"
+  checkpoint_manifest_filename: "{run_name}_adapter_manifest.json"

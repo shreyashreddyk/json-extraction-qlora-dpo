@@ -20,6 +20,6 @@ class RuntimeContextTest(unittest.TestCase):
 
             self.assertEqual(context.stage, "eval")
             self.assertTrue(context.metrics_dir.exists())
+            self.assertTrue(context.plots_dir.exists())
             self.assertTrue(context.reports_dir.exists())
             self.assertTrue(context.run_dir.exists())
-

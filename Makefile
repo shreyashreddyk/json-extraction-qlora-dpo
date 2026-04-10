@@ -30,6 +30,7 @@ drive-init:
 	mkdir -p "$(DRIVE_SOURCE_DIR)"
 	mkdir -p "$(DRIVE_RUNS_DIR)"
 	mkdir -p "$(DRIVE_RUNS_DIR)/persistent/metrics"
+	mkdir -p "$(DRIVE_RUNS_DIR)/persistent/plots"
 	mkdir -p "$(DRIVE_RUNS_DIR)/persistent/reports"
 	mkdir -p "$(DRIVE_RUNS_DIR)/persistent/logs"
 	mkdir -p "$(DRIVE_RUNS_DIR)/persistent/checkpoints"
@@ -53,9 +54,11 @@ drive-push-source:
 	$(RSYNC) -av $(RSYNC_EXCLUDES) "./requirements-colab.txt" "$(DRIVE_SOURCE_DIR)/requirements-colab.txt"
 
 drive-pull-artifacts:
-	mkdir -p "./artifacts/metrics" "./artifacts/reports"
+	mkdir -p "./artifacts/metrics" "./artifacts/plots" "./artifacts/reports" "./artifacts/checkpoints"
 	if [ -d "$(DRIVE_SOURCE_DIR)/artifacts/metrics" ]; then $(RSYNC) -av "$(DRIVE_SOURCE_DIR)/artifacts/metrics/" "./artifacts/metrics/"; else echo "No mirrored metrics found in $(DRIVE_SOURCE_DIR)/artifacts/metrics"; fi
+	if [ -d "$(DRIVE_SOURCE_DIR)/artifacts/plots" ]; then $(RSYNC) -av "$(DRIVE_SOURCE_DIR)/artifacts/plots/" "./artifacts/plots/"; else echo "No mirrored plots found in $(DRIVE_SOURCE_DIR)/artifacts/plots"; fi
 	if [ -d "$(DRIVE_SOURCE_DIR)/artifacts/reports" ]; then $(RSYNC) -av "$(DRIVE_SOURCE_DIR)/artifacts/reports/" "./artifacts/reports/"; else echo "No mirrored reports found in $(DRIVE_SOURCE_DIR)/artifacts/reports"; fi
+	if [ -d "$(DRIVE_SOURCE_DIR)/artifacts/checkpoints" ]; then $(RSYNC) -av --include '*/' --include '*.json' --exclude '*' "$(DRIVE_SOURCE_DIR)/artifacts/checkpoints/" "./artifacts/checkpoints/"; else echo "No mirrored checkpoint metadata found in $(DRIVE_SOURCE_DIR)/artifacts/checkpoints"; fi
 
 tree:
 	find . -maxdepth 3 \
