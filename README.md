@@ -13,10 +13,10 @@ natural language inputs and comparing three stages honestly:
 2. Supervised fine-tuning with LoRA or QLoRA
 3. Preference tuning with DPO on the same schema contract
 
-This repository now includes a Colab execution layer for notebook-driven GPU
-work. Training and benchmarking logic remain scaffolded, but the runtime
-contracts for Colab, Drive-backed persistence, and latest-model tracking are in
-place.
+This repository now includes a Colab-native execution layer for notebook-driven
+GPU work. The final runtime model treats Colab as disposable compute, Google
+Drive as the durable transport and runtime storage layer, and the local Git
+repo as the source of truth for code, configs, docs, and tracked artifacts.
 
 ## Intended Workflow
 
@@ -82,19 +82,45 @@ Use the local environment for:
 - running fast tests and compile checks
 - reviewing generated small artifacts before commit
 
-### 2. Colab runtime environment
+### 2. Google Drive source + Colab runtime
 
-From a VS Code notebook connected to Colab:
+The final Colab workflow uses two Google Drive folders:
 
-1. Upload `src/`, `scripts/`, `configs/`, and `requirements-colab.txt` to `/content/local_repo_sync` using the Colab extension.
-2. Run [`notebooks/00_colab_setup.ipynb`](notebooks/00_colab_setup.ipynb).
-3. Execute the phase notebook you need for baseline eval, SFT, DPO, or vLLM benchmarking.
+- `json-ft-source`: mirrored execution copy of the repo subset needed by Colab
+- `json-ft-runs`: persistent runtime outputs such as metrics, reports, logs,
+  checkpoints, and scratch data
+
+The default local Drive desktop root for this repo is:
+
+```text
+/Users/shreyashreddy/Library/CloudStorage/GoogleDrive-kshreyashreddy@gmail.com/My Drive
+```
+
+Initialize those folders locally:
+
+```bash
+make drive-init
+```
+
+Preview and push the execution subset into Drive:
+
+```bash
+make drive-push-source-dry-run
+make drive-push-source
+```
+
+Then from a Colab notebook connected to the runtime:
+
+1. Run [`notebooks/00_colab_setup.ipynb`](notebooks/00_colab_setup.ipynb).
+2. Execute the phase notebook you need for baseline eval, SFT, DPO, or vLLM benchmarking.
 
 The setup notebook will:
 
 - mount Google Drive
-- install `requirements-colab.txt`
-- sync the uploaded repo content into a Drive-backed runtime workspace
+- verify the mirrored Drive source tree
+- install pinned `requirements-colab.txt` from `json-ft-source`
+- resolve `SOURCE_ROOT=/content/drive/MyDrive/json-ft-source`
+- resolve `RUNTIME_ROOT=/content/drive/MyDrive/json-ft-runs`
 - print resolved runtime paths
 
 ### 3. Inspect the repo and data contract
@@ -132,15 +158,86 @@ The recommended operating model is:
 
 1. edit code locally in VS Code
 2. validate locally with fast non-GPU checks
-3. use the Colab extension to upload execution-relevant repo content
-4. run Colab notebooks as the GPU control plane
-5. persist heavy outputs and checkpoints in Drive-backed paths
-6. mirror selected small final metrics and reports back into the repo
+3. mirror the execution subset into `json-ft-source` with `make drive-push-source`
+4. run Colab notebooks directly from the Drive-backed source tree
+5. persist runtime outputs in `json-ft-runs`
+6. pull mirrored small artifacts back into the repo with `make drive-pull-artifacts`
 
 This repository intentionally separates:
 
-- `git repo`: code, configs, docs, manifests, small final artifacts
-- `Drive-backed runtime`: checkpoints, large intermediate outputs, runtime logs
+- `git repo`: source of truth for code, configs, docs, manifests, and reviewed small artifacts
+- `json-ft-source`: mirrored execution copy for Colab, refreshed intentionally from the repo
+- `json-ft-runs`: persistent runtime outputs outside Git
+
+## Why This Is Production-Grade With Colab
+
+Using Colab as the available GPU resource does not lower the engineering bar.
+The workflow remains production-oriented because:
+
+- Colab is treated as a disposable execution plane, not the source of truth.
+- The repo remains the controlled system of record.
+- Drive is used only as a durable transport and runtime storage layer.
+- Colab dependencies are pinned and aligned to the shared runtime image so setup stays reproducible without extra environment management.
+- Notebooks stay thin and orchestration-only.
+- Reusable logic remains in `src/` and `scripts/`.
+- Config-driven execution and deterministic artifact paths preserve reproducibility.
+- Outputs are saved as metrics and reports that can be reviewed, versioned, and compared.
+- Baseline, SFT, and DPO stages stay aligned to one schema and eval contract.
+
+The practical separation of concerns is:
+
+1. author locally
+2. sync source intentionally
+3. run on ephemeral GPU
+4. persist outputs durably
+5. pull final artifacts back into the repo
+
+This keeps the system disciplined even though the compute layer is Colab-native.
+
+## Standard Commands
+
+Local machine:
+
+```bash
+make drive-init
+make drive-push-source-dry-run
+make drive-push-source
+make drive-pull-artifacts
+```
+
+Colab setup:
+
+```python
+from google.colab import drive
+drive.mount("/content/drive")
+```
+
+```python
+from pathlib import Path
+import sys
+
+SOURCE_ROOT = Path("/content/drive/MyDrive/json-ft-source")
+RUNTIME_ROOT = Path("/content/drive/MyDrive/json-ft-runs")
+sys.path.insert(0, str(SOURCE_ROOT / "src"))
+```
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r /content/drive/MyDrive/json-ft-source/requirements-colab.txt
+```
+
+Baseline evaluation:
+
+```bash
+python /content/drive/MyDrive/json-ft-source/scripts/eval_model.py \
+  --config /content/drive/MyDrive/json-ft-source/configs/eval.yaml \
+  --run-name baseline-qwen2.5-1.5b \
+  --runtime-root /content/drive/MyDrive/json-ft-runs \
+  --dataset-path /content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_eval_manifest.jsonl \
+  --mirror-metrics-to-repo \
+  --mirror-report-to-repo \
+  --mirror-predictions-to-repo
+```
 
 The final promoted model is tracked through
 [`artifacts/checkpoints/latest_model.json`](artifacts/checkpoints/latest_model.json).
@@ -156,7 +253,7 @@ This repository currently provides:
   Nemotron-style, and eval manifest formats
 - script entrypoints for generating SFT and eval manifests
 - generated synthetic fixture data and repo-side manifests under `data/manifests/`
-- Colab runtime helpers for path resolution, sync, and latest-model tracking
+- Colab runtime helpers for path resolution and latest-model tracking
 - Colab-oriented notebooks for setup, data audit, eval, training review, and benchmarking
 - local documentation for the data contract and evaluation plan
 - deterministic tests for schema validation, formatting, preference placeholders,

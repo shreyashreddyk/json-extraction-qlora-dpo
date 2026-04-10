@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 import json
 
 
@@ -28,6 +29,24 @@ def read_text(path: str | Path) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
+def write_text(path: str | Path, contents: str) -> Path:
+    """Write a UTF-8 text file."""
+
+    resolved = Path(path).resolve()
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.write_text(contents, encoding="utf-8")
+    return resolved
+
+
+def read_json(path: str | Path) -> dict[str, Any]:
+    """Read a JSON object from disk."""
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Expected JSON object in {Path(path).resolve()}")
+    return payload
+
+
 def write_json(path: str | Path, payload: dict) -> Path:
     """Write a JSON file with stable formatting."""
 
@@ -35,6 +54,23 @@ def write_json(path: str | Path, payload: dict) -> Path:
     resolved.parent.mkdir(parents=True, exist_ok=True)
     resolved.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return resolved
+
+
+def load_yaml(path: str | Path) -> dict[str, Any]:
+    """Load a YAML mapping from disk."""
+
+    try:
+        import yaml
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "PyYAML is required to load repository config files. "
+            "Install it in your environment before running config-driven scripts."
+        ) from exc
+
+    payload = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    if not isinstance(payload, dict):
+        raise ValueError(f"Expected a YAML mapping in {Path(path).resolve()}")
+    return payload
 
 
 def read_jsonl(path: str | Path) -> list[dict]:

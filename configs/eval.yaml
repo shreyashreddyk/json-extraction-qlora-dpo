@@ -1,11 +1,22 @@
-# Evaluation configuration placeholder.
-# dataset_manifest:
-# schema_version:
-# prompt_template:
-# metrics_output_path:
-# sample_limit:
-# generation:
-#   temperature:
-#   top_p:
-#   max_new_tokens:
+backend: local-transformers
+model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+dataset_path: data/manifests/support_tickets_eval_manifest.jsonl
+prompt_source: messages
+sample_limit: null
 
+model:
+  revision: null
+  trust_remote_code: false
+  torch_dtype: auto
+  device_map: null
+
+generation:
+  max_new_tokens: 256
+  temperature: 0.0
+  top_p: 1.0
+  do_sample: false
+
+artifacts:
+  metrics_filename: "{run_name}_metrics.json"
+  report_filename: "{run_name}_report.md"
+  predictions_filename: "{run_name}_predictions.jsonl"

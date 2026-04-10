@@ -14,6 +14,7 @@ authors = [
 ]
 dependencies = [
   "pydantic>=2.7",
+  "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -29,6 +30,7 @@ train = [
   "trl>=0.8",
 ]
 inference = [
+  "transformers>=4.40",
   "vllm>=0.4",
 ]
 

@@ -8,7 +8,13 @@ from .dataset_adapters import (
     SFTExample,
 )
 from .manifests import LatestModelManifest, load_latest_model_manifest, save_latest_model_manifest
-from .metrics import categorical_exact_match, json_validity_rate, schema_pass_rate
+from .metrics import (
+    EvaluationRecord,
+    categorical_exact_match,
+    evaluate_records,
+    json_validity_rate,
+    schema_pass_rate,
+)
 from .runtime import RuntimeContext, detect_colab, resolve_runtime_context
 from .schemas import (
     CustomerContext,
@@ -26,6 +32,7 @@ from .schemas import (
 
 __all__ = [
     "CustomerContext",
+    "EvaluationRecord",
     "IssueCategory",
     "JsonExtractionSample",
     "LatestModelManifest",
@@ -45,6 +52,7 @@ __all__ = [
     "build_support_ticket_schema",
     "categorical_exact_match",
     "detect_colab",
+    "evaluate_records",
     "json_validity_rate",
     "load_latest_model_manifest",
     "resolve_runtime_context",

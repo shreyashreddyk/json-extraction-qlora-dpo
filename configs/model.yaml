@@ -1,12 +1,10 @@
-# Base model selection placeholder.
-# model_name_or_path:
-# tokenizer_name_or_path:
-# revision:
-# trust_remote_code:
-# torch_dtype:
-# quantization:
-#   enabled:
-#   load_in_4bit:
-#   compute_dtype:
-#   quant_type:
+base_model:
+  model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+  tokenizer_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+  revision: null
+  trust_remote_code: false
+  torch_dtype: auto
+  device_map: null
 
+notes:
+  purpose: Untuned baseline for schema-constrained JSON extraction evaluation.
