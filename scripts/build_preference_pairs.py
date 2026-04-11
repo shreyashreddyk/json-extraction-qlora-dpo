@@ -17,7 +17,11 @@ from json_ft.preference import (
     resolve_preference_output_paths,
     write_preference_artifacts,
 )
-from json_ft.runtime import format_runtime_summary, resolve_runtime_context
+from json_ft.runtime import (
+    format_runtime_backend_summary,
+    format_runtime_summary,
+    resolve_runtime_context,
+)
 from json_ft.schemas import build_support_ticket_schema
 from json_ft.utils import write_json
 
@@ -104,6 +108,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Source rows: {len(samples)}")
     print(f"Candidate count per prompt: {config.candidate_count}")
     print(format_runtime_summary(context))
+    print(
+        format_runtime_backend_summary(
+            explicit_device_map=config.device_map,
+            cuda_default="cuda",
+        )
+    )
 
     if args.dry_run:
         summary_path = write_json(

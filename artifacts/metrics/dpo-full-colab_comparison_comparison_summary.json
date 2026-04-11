@@ -1,0 +1,308 @@
+{
+  "deltas": {
+    "dpo_vs_baseline": {
+      "semantic": {
+        "field_level_macro_f1": 0.03703703703703709,
+        "field_level_micro_f1": 0.024198427102238407
+      },
+      "syntax": {
+        "hallucinated_field_rate": 0.0,
+        "json_recovery_rate": 0.0,
+        "json_validity_rate": 0.0,
+        "schema_validation_pass_rate": 0.0
+      }
+    },
+    "dpo_vs_sft": {
+      "semantic": {
+        "field_level_macro_f1": 0.0,
+        "field_level_micro_f1": 0.0
+      },
+      "syntax": {
+        "hallucinated_field_rate": 0.0,
+        "json_recovery_rate": 0.0,
+        "json_validity_rate": 0.0,
+        "schema_validation_pass_rate": 0.0
+      }
+    },
+    "sft_vs_baseline": {
+      "semantic": {
+        "field_level_macro_f1": 0.03703703703703709,
+        "field_level_micro_f1": 0.024198427102238407
+      },
+      "syntax": {
+        "hallucinated_field_rate": 0.0,
+        "json_recovery_rate": 0.0,
+        "json_validity_rate": 0.0,
+        "schema_validation_pass_rate": 0.0
+      }
+    }
+  },
+  "row_evidence": {
+    "dpo_hurts": [
+      {
+        "baseline": {
+          "parsed_payload": {
+            "actions_requested": [
+              "Provide documentation on regional data residency support in the starter tier."
+            ],
+            "customer": {
+              "account_id": "Account ID",
+              "name": "Customer Name",
+              "plan_tier": "free"
+            },
+            "issue_category": "general_question",
+            "priority": "medium",
+            "product_area": "billing_portal",
+            "requires_human_followup": true,
+            "sentiment": "neutral",
+            "summary": "Regional Data Residency Support Question"
+          },
+          "raw_output": "{\n  \"summary\": \"Regional Data Residency Support Question\",\n  \"issue_category\": \"general_question\",\n  \"priority\": \"medium\",\n  \"product_area\": \"billing_portal\",\n  \"customer\": {\n    \"name\": \"Customer Name\",\n    \"account_id\": \"Account ID\",\n    \"plan_tier\": \"free\"\n  },\n  \"sentiment\": \"neutral\",\n  \"requires_human_followup\": true,\n  \"actions_requested\": [\n    \"Provide documentation on regional data residency support in the starter tier.\"\n  ]\n}",
+          "semantic": {
+            "actions_f1": 0.0,
+            "nullable_hallucination_count": 3,
+            "semantic_score": -0.1111111111111111,
+            "structured_match_count": 2,
+            "structured_matches": {
+              "customer.account_id": false,
+              "customer.name": false,
+              "customer.plan_tier": false,
+              "issue_category": true,
+              "priority": false,
+              "product_area": false,
+              "requires_human_followup": false,
+              "sentiment": true
+            },
+            "structured_total": 8
+          },
+          "syntax_tuple": [
+            1,
+            1,
+            1
+          ]
+        },
+        "dpo": {
+          "parsed_payload": {
+            "actions_requested": [
+              "Provide information about regional data residency support in the starter tier.",
+              "If no documentation exists, provide a link to a relevant document."
+            ],
+            "customer": {
+              "account_id": "Not provided",
+              "name": "Not provided",
+              "plan_tier": "free"
+            },
+            "issue_category": "general_question",
+            "priority": "medium",
+            "product_area": "web_app",
+            "requires_human_followup": true,
+            "sentiment": "neutral",
+            "summary": "Customer inquiry about regional data residency support in the starter tier"
+          },
+          "raw_output": "{\n  \"summary\": \"Customer inquiry about regional data residency support in the starter tier\",\n  \"issue_category\": \"general_question\",\n  \"priority\": \"medium\",\n  \"product_area\": \"web_app\",\n  \"customer\": {\n    \"name\": \"Not provided\",\n    \"account_id\": \"Not provided\",\n    \"plan_tier\": \"free\"\n  },\n  \"sentiment\": \"neutral\",\n  \"requires_human_followup\": true,\n  \"actions_requested\": [\n    \"Provide information about regional data residency support in the starter tier.\",\n    \"If no documentation exists, provide a link to a relevant document.\"\n  ]\n}",
+          "semantic": {
+            "actions_f1": 0.0,
+            "nullable_hallucination_count": 3,
+            "semantic_score": -0.1111111111111111,
+            "structured_match_count": 2,
+            "structured_matches": {
+              "customer.account_id": false,
+              "customer.name": false,
+              "customer.plan_tier": false,
+              "issue_category": true,
+              "priority": false,
+              "product_area": false,
+              "requires_human_followup": false,
+              "sentiment": true
+            },
+            "structured_total": 8
+          },
+          "syntax_tuple": [
+            1,
+            1,
+            1
+          ]
+        },
+        "reason": "DPO changed the output without improving syntax or semantic score relative to SFT. Treat this as a regression-risk example because behavior moved with no measured gain.",
+        "record_id": "support-eval-003",
+        "reference_payload": {
+          "actions_requested": [
+            "Provide documentation about regional data residency availability"
+          ],
+          "customer": {
+            "account_id": null,
+            "name": null,
+            "plan_tier": null
+          },
+          "issue_category": "general_question",
+          "priority": "low",
+          "product_area": "unknown",
+          "requires_human_followup": false,
+          "sentiment": "neutral",
+          "summary": "Prospective customer asks whether regional data residency is available on starter plans and would accept documentation."
+        },
+        "sft": {
+          "parsed_payload": {
+            "actions_requested": [
+              "Provide information about regional data residency support in the starter tier.",
+              "If no documentation exists, provide a link to a relevant document."
+            ],
+            "customer": {
+              "account_id": "Not provided",
+              "name": "Not provided",
+              "plan_tier": "free"
+            },
+            "issue_category": "general_question",
+            "priority": "medium",
+            "product_area": "billing_portal",
+            "requires_human_followup": true,
+            "sentiment": "neutral",
+            "summary": "Customer inquiry about regional data residency support in the starter tier"
+          },
+          "raw_output": "{\n  \"summary\": \"Customer inquiry about regional data residency support in the starter tier\",\n  \"issue_category\": \"general_question\",\n  \"priority\": \"medium\",\n  \"product_area\": \"billing_portal\",\n  \"customer\": {\n    \"name\": \"Not provided\",\n    \"account_id\": \"Not provided\",\n    \"plan_tier\": \"free\"\n  },\n  \"sentiment\": \"neutral\",\n  \"requires_human_followup\": true,\n  \"actions_requested\": [\n    \"Provide information about regional data residency support in the starter tier.\",\n    \"If no documentation exists, provide a link to a relevant document.\"\n  ]\n}",
+          "semantic": {
+            "actions_f1": 0.0,
+            "nullable_hallucination_count": 3,
+            "semantic_score": -0.1111111111111111,
+            "structured_match_count": 2,
+            "structured_matches": {
+              "customer.account_id": false,
+              "customer.name": false,
+              "customer.plan_tier": false,
+              "issue_category": true,
+              "priority": false,
+              "product_area": false,
+              "requires_human_followup": false,
+              "sentiment": true
+            },
+            "structured_total": 8
+          },
+          "syntax_tuple": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    ],
+    "dpo_semantic_help": [],
+    "dpo_syntax_only_help": []
+  },
+  "run_name": "dpo-full-colab_comparison",
+  "stages": {
+    "baseline": {
+      "latency_ms": {
+        "max": 5151.339373999917,
+        "mean": 4033.6954459999106,
+        "min": 3384.0871509999033,
+        "p50": 3565.659812999911,
+        "p95": 5151.339373999917
+      },
+      "metrics_path": "/content/drive/MyDrive/json-ft-source/artifacts/metrics/baseline-qwen2.5-1.5b_metrics.json",
+      "model": {
+        "adapter_path": null,
+        "base_model": null,
+        "merged_model_path": null,
+        "model_manifest_path": null,
+        "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct"
+      },
+      "predictions_path": "/content/drive/MyDrive/json-ft-source/artifacts/reports/baseline-qwen2.5-1.5b_predictions.jsonl",
+      "run_name": "baseline-qwen2.5-1.5b",
+      "semantic": {
+        "categorical_exact_match": {
+          "customer.plan_tier": 0.6666666666666666,
+          "issue_category": 0.6666666666666666,
+          "priority": 0.6666666666666666,
+          "product_area": 0.6666666666666666,
+          "requires_human_followup": 0.6666666666666666,
+          "sentiment": 1.0
+        },
+        "field_level_macro_f1": 0.6296296296296295,
+        "field_level_micro_f1": 0.5964912280701754
+      },
+      "stage_label": "baseline_eval",
+      "syntax": {
+        "hallucinated_field_rate": 0.0,
+        "json_recovery_rate": 0.0,
+        "json_validity_rate": 1.0,
+        "schema_validation_pass_rate": 1.0
+      }
+    },
+    "dpo": {
+      "latency_ms": {
+        "max": 10507.727596999757,
+        "mean": 10266.593081333363,
+        "min": 9900.079903000005,
+        "p50": 10391.97174400033,
+        "p95": 10507.727596999757
+      },
+      "metrics_path": "/content/drive/MyDrive/json-ft-runs/persistent/metrics/dpo-full-colab_eval_metrics.json",
+      "model": {
+        "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/dpo/dpo-full-colab/adapter",
+        "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "merged_model_path": null,
+        "model_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/dpo-full-colab_dpo_manifest.json",
+        "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct"
+      },
+      "predictions_path": "/content/drive/MyDrive/json-ft-runs/persistent/reports/dpo-full-colab_eval_predictions.jsonl",
+      "run_name": "dpo-full-colab_eval",
+      "semantic": {
+        "categorical_exact_match": {
+          "customer.plan_tier": 0.6666666666666666,
+          "issue_category": 1.0,
+          "priority": 0.6666666666666666,
+          "product_area": 0.6666666666666666,
+          "requires_human_followup": 0.6666666666666666,
+          "sentiment": 1.0
+        },
+        "field_level_macro_f1": 0.6666666666666666,
+        "field_level_micro_f1": 0.6206896551724138
+      },
+      "stage_label": "dpo",
+      "syntax": {
+        "hallucinated_field_rate": 0.0,
+        "json_recovery_rate": 0.0,
+        "json_validity_rate": 1.0,
+        "schema_validation_pass_rate": 1.0
+      }
+    },
+    "sft": {
+      "latency_ms": {
+        "max": 10627.75448299908,
+        "mean": 10344.345547999788,
+        "min": 9966.283739000573,
+        "p50": 10438.998421999713,
+        "p95": 10627.75448299908
+      },
+      "metrics_path": "/content/drive/MyDrive/json-ft-runs/persistent/metrics/sft-qwen2.5-1.5b-qlora-v1_eval_metrics.json",
+      "model": {
+        "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-qwen2.5-1.5b-qlora-v1/adapter",
+        "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "merged_model_path": null,
+        "model_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-qwen2.5-1.5b-qlora-v1_adapter_manifest.json",
+        "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct"
+      },
+      "predictions_path": "/content/drive/MyDrive/json-ft-runs/persistent/reports/sft-qwen2.5-1.5b-qlora-v1_eval_predictions.jsonl",
+      "run_name": "sft-qwen2.5-1.5b-qlora-v1_eval",
+      "semantic": {
+        "categorical_exact_match": {
+          "customer.plan_tier": 0.6666666666666666,
+          "issue_category": 1.0,
+          "priority": 0.6666666666666666,
+          "product_area": 0.6666666666666666,
+          "requires_human_followup": 0.6666666666666666,
+          "sentiment": 1.0
+        },
+        "field_level_macro_f1": 0.6666666666666666,
+        "field_level_micro_f1": 0.6206896551724138
+      },
+      "stage_label": "sft",
+      "syntax": {
+        "hallucinated_field_rate": 0.0,
+        "json_recovery_rate": 0.0,
+        "json_validity_rate": 1.0,
+        "schema_validation_pass_rate": 1.0
+      }
+    }
+  }
+}

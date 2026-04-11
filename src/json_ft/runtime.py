@@ -127,6 +127,59 @@ def format_runtime_summary(context: RuntimeContext) -> str:
     return "\n".join(context.summary_lines())
 
 
+def runtime_backend_summary_lines(
+    *,
+    explicit_device_map: str | None = None,
+    cuda_default: str = "auto",
+) -> list[str]:
+    """Describe the active torch/CUDA runtime without requiring callers to know torch internals."""
+
+    try:
+        import torch
+    except ModuleNotFoundError:
+        effective = explicit_device_map or "cpu (torch unavailable)"
+        return [
+            "torch_available=False",
+            "cuda_available=False",
+            f"explicit_device_map={explicit_device_map or '<none>'}",
+            f"effective_device_placement={effective}",
+        ]
+
+    cuda_available = bool(torch.cuda.is_available())
+    lines = [
+        "torch_available=True",
+        f"cuda_available={cuda_available}",
+        f"explicit_device_map={explicit_device_map or '<none>'}",
+    ]
+    if cuda_available:
+        try:
+            lines.append(f"cuda_device_count={torch.cuda.device_count()}")
+            lines.append(f"cuda_device_name={torch.cuda.get_device_name(0)}")
+        except Exception:
+            lines.append("cuda_device_name=<unavailable>")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        lines.append("mps_available=True")
+
+    effective = explicit_device_map or (cuda_default if cuda_available else "cpu")
+    lines.append(f"effective_device_placement={effective}")
+    return lines
+
+
+def format_runtime_backend_summary(
+    *,
+    explicit_device_map: str | None = None,
+    cuda_default: str = "auto",
+) -> str:
+    """Render the torch/CUDA runtime summary for logs and notebooks."""
+
+    return "\n".join(
+        runtime_backend_summary_lines(
+            explicit_device_map=explicit_device_map,
+            cuda_default=cuda_default,
+        )
+    )
+
+
 def resolve_repo_artifact_targets(repo_root: str | Path) -> dict[str, Path]:
     """Return the small repo-side artifact paths used for mirrored results."""
 

@@ -231,6 +231,7 @@ Baseline evaluation:
 ```bash
 python /content/drive/MyDrive/json-ft-source/scripts/eval_model.py \
   --config /content/drive/MyDrive/json-ft-source/configs/eval.yaml \
+  --stage-label baseline \
   --run-name baseline-qwen2.5-1.5b \
   --runtime-root /content/drive/MyDrive/json-ft-runs \
   --dataset-path /content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_eval_manifest.jsonl \
@@ -238,6 +239,70 @@ python /content/drive/MyDrive/json-ft-source/scripts/eval_model.py \
   --mirror-report-to-repo \
   --mirror-predictions-to-repo
 ```
+
+## Exact Staged Workflow
+
+The intended production-style sequence is now:
+
+1. Run `notebooks/00_colab_setup.ipynb`.
+2. Run `notebooks/01_baseline_eval.ipynb` to produce the baseline metrics,
+   report, and prediction artifact under `json-ft-source/artifacts/`.
+3. Run `notebooks/02_sft_review.ipynb` to train the SFT adapter and mirror the
+   SFT summary, checkpoint manifest, and plots back into
+   `json-ft-source/artifacts/`.
+4. Run `notebooks/03_preference_pair_audit.ipynb` to build and review the DPO
+   pair dataset under `json-ft-runs/persistent/preferences/<run_name>/`.
+5. Run `notebooks/04_dpo_review.ipynb` to:
+   - train the DPO adapter
+   - inspect DPO loss and reward traces
+   - evaluate SFT and DPO on the held-out manifest
+   - build a consolidated baseline vs SFT vs DPO comparison report
+6. Pull the mirrored small artifacts back into the local repo with
+   `make drive-pull-artifacts`.
+
+### DPO training command
+
+`notebooks/04_dpo_review.ipynb` now embeds the authoritative DPO command. It
+uses:
+
+- `scripts/train_dpo.py`
+- `configs/dpo.yaml`
+- the generated preference-pair JSONL
+- the explicit SFT checkpoint manifest
+- repo-mirroring flags for metrics, plots, and checkpoint metadata
+
+### Three-stage comparison contract
+
+The consolidated comparison is built from saved stage artifacts, not notebook
+memory:
+
+- baseline metrics + predictions
+- SFT eval metrics + predictions
+- DPO eval metrics + predictions
+
+`scripts/compare_stages.py` produces:
+
+- `<run_name>_comparison_summary.json`
+- `<run_name>_comparison_report.md`
+
+The report keeps these layers separate:
+
+- syntax gains:
+  - JSON validity
+  - schema pass rate
+  - hallucinated-field rate
+  - parse recovery rate
+- semantic gains:
+  - categorical exact-match fields
+  - field-level micro F1
+  - field-level macro F1
+- latency
+
+It also includes row-level evidence for:
+
+- cases where DPO helps semantically
+- cases where DPO mostly helps syntax
+- cases where DPO hurts relative to SFT
 
 The final promoted model is tracked through
 [`artifacts/checkpoints/latest_model.json`](artifacts/checkpoints/latest_model.json).
@@ -254,13 +319,15 @@ This repository currently provides:
 - script entrypoints for generating SFT and eval manifests
 - generated synthetic fixture data and repo-side manifests under `data/manifests/`
 - Colab runtime helpers for path resolution and latest-model tracking
-- Colab-oriented notebooks for setup, data audit, eval, training review, and benchmarking
+- runnable SFT and DPO training CLIs with dry-run validation
+- Colab-oriented notebooks for setup, data audit, baseline review, SFT review,
+  preference auditing, DPO review, and benchmarking
+- consolidated three-stage comparison reporting across baseline, SFT, and DPO
 - local documentation for the data contract and evaluation plan
-- deterministic tests for schema validation, formatting, preference placeholders,
-  and CLI smoke paths
+- deterministic tests for schema validation, formatting, preference building,
+  eval reporting, DPO training, and CLI smoke paths
 
 It intentionally does not yet provide:
 
-- runnable SFT or DPO training logic
 - model benchmarking results
 - a real external raw-data integration

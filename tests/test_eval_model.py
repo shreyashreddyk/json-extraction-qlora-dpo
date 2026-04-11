@@ -91,13 +91,15 @@ class EvalModelCliTest(unittest.TestCase):
                 ),
             )
 
-            with patch.object(module, "build_inference_backend", return_value=FakeBackend(responses)):
+            with patch("json_ft.evaluation.build_inference_backend", return_value=FakeBackend(responses)):
                 exit_code = module.main(
                     [
                         "--config",
                         str(config_path),
                         "--run-name",
                         "smoke-eval",
+                        "--stage-label",
+                        "baseline",
                         "--runtime-root",
                         str(runtime_root),
                         "--metrics-output",
@@ -115,9 +117,11 @@ class EvalModelCliTest(unittest.TestCase):
             prediction_rows = read_jsonl(predictions_path)
 
             self.assertEqual(metrics["record_count"], 2)
+            self.assertEqual(metrics["stage"], "baseline")
             self.assertEqual(metrics["json_validity_rate"], 1.0)
             self.assertEqual(metrics["schema_validation_pass_rate"], 1.0)
             self.assertIn("# Baseline Evaluation Report: smoke-eval", report)
             self.assertIn("JSON validity rate", report)
             self.assertEqual(len(prediction_rows), 2)
             self.assertEqual(prediction_rows[0]["backend"], "fake-backend")
+            self.assertEqual(prediction_rows[0]["stage_label"], "baseline")

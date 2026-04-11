@@ -8,7 +8,11 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from json_ft.runtime import format_runtime_summary, resolve_runtime_context
+from json_ft.runtime import (
+    format_runtime_backend_summary,
+    format_runtime_summary,
+    resolve_runtime_context,
+)
 from json_ft.sft import (
     build_trainer_bundle,
     load_sft_eval_records,
@@ -66,6 +70,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Eval rows: {len(eval_records)}")
     print(f"Adapter output: {artifacts.adapter_dir}")
     print(format_runtime_summary(context))
+    print(
+        format_runtime_backend_summary(
+            explicit_device_map=config.raw_config.get("model", {}).get("device_map"),
+            cuda_default="auto",
+        )
+    )
 
     if args.dry_run:
         summary_path, checkpoint_manifest_path = write_dry_run_artifacts(

@@ -1,11 +1,21 @@
 model:
   latest_model_manifest: artifacts/checkpoints/latest_model.json
+  source_sft_manifest: null
   base_model: null
   adapter_path: null
+  merged_model_path: null
+  reference_strategy: adapter
   revision: null
   trust_remote_code: false
   torch_dtype: auto
   device_map: null
+
+quantization:
+  enabled: true
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+  compute_dtype: auto
 
 pair_generation:
   input_path: data/fixtures/support_tickets.jsonl
@@ -21,28 +31,75 @@ pair_generation:
     do_sample: true
     base_seed: 17
 
+training:
+  preference_manifest: null
+  eval_preference_manifest: null
+  train_sample_limit: null
+  eval_sample_limit: null
+  beta: 0.1
+  loss_type: sigmoid
+  learning_rate: 5.0e-6
+  num_train_epochs: 1
+  max_steps: null
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: true
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  weight_decay: 0.0
+  optim: paged_adamw_32bit
+  logging_steps: 1
+  save_total_limit: 2
+  report_to: []
+  eval_strategy: "no"
+  eval_steps: null
+  save_strategy: epoch
+  save_steps: null
+  max_prompt_length: 1024
+  max_completion_length: 256
+  precompute_ref_log_probs: false
+
 profiles:
   dev:
     pair_generation:
       candidate_count: 3
       sample_limit: 3
+    training:
+      train_sample_limit: 3
+      eval_sample_limit: null
+      max_steps: 5
+      per_device_train_batch_size: 1
+      gradient_accumulation_steps: 2
+      logging_steps: 1
+      eval_strategy: "no"
+      save_strategy: steps
+      save_steps: 2
 
   full:
     pair_generation:
       candidate_count: 6
       sample_limit: null
+    training:
+      train_sample_limit: null
+      eval_sample_limit: null
+      num_train_epochs: 2
+      per_device_train_batch_size: 1
+      gradient_accumulation_steps: 4
+      logging_steps: 1
+      eval_strategy: "no"
+      save_strategy: epoch
+      save_steps: null
 
 artifacts:
   pairs_filename: "{run_name}_dpo_pairs.jsonl"
   audit_filename: "{run_name}_preference_audit.jsonl"
-  summary_filename: "{run_name}_preference_summary.json"
-
-training:
-  preference_manifest: null
-  beta: 0.1
-  learning_rate: 5.0e-6
-  num_train_epochs: 1
-  per_device_train_batch_size: 1
-  gradient_accumulation_steps: 4
-  max_prompt_length: 1024
-  max_completion_length: 256
+  summary_filename: "{run_name}_dpo_summary.json"
+  history_filename: "{run_name}_dpo_history.json"
+  checkpoint_manifest_filename: "{run_name}_dpo_manifest.json"
+  loss_curve_filename: "{run_name}_dpo_loss_curve.png"
+  eval_loss_curve_filename: "{run_name}_dpo_eval_loss_curve.png"
+  rewards_chosen_curve_filename: "{run_name}_dpo_rewards_chosen_curve.png"
+  rewards_rejected_curve_filename: "{run_name}_dpo_rewards_rejected_curve.png"
+  rewards_accuracies_curve_filename: "{run_name}_dpo_rewards_accuracies_curve.png"
+  rewards_margins_curve_filename: "{run_name}_dpo_rewards_margins_curve.png"

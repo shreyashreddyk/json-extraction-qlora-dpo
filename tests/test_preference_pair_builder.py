@@ -97,6 +97,96 @@ class FakeBackend:
 
 
 class PreferencePairBuilderTest(unittest.TestCase):
+    def test_resolve_preference_config_recovers_sft_adapter_from_dpo_latest_manifest(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            fixture_rows = read_jsonl(FIXTURE_PATH)[:1]
+            input_path = tmp_path / "source.jsonl"
+            config_path = tmp_path / "dpo.yaml"
+            latest_manifest_path = tmp_path / "latest_model.json"
+            dpo_manifest_path = tmp_path / "dpo_manifest.json"
+            source_manifest_path = tmp_path / "sft_manifest.json"
+            sft_adapter_path = tmp_path / "runtime" / "checkpoints" / "sft" / "adapter"
+            sft_adapter_path.mkdir(parents=True)
+
+            write_jsonl(input_path, fixture_rows)
+            write_text(
+                config_path,
+                "\n".join(
+                    [
+                        "model:",
+                        f"  latest_model_manifest: {latest_manifest_path}",
+                        "  base_model: null",
+                        "  adapter_path: null",
+                        "pair_generation:",
+                        f"  input_path: {input_path}",
+                        "  source_format: json_extraction",
+                        "  source_split: train",
+                        "  prompt_source: messages",
+                        "  candidate_count: 3",
+                        "  sample_limit: 1",
+                        "  generation:",
+                        "    max_new_tokens: 64",
+                        "    temperature: 0.8",
+                        "    top_p: 0.95",
+                        "    do_sample: true",
+                        "    base_seed: 11",
+                        "profiles:",
+                        "  dev: {}",
+                        "artifacts:",
+                        '  pairs_filename: "{run_name}_dpo_pairs.jsonl"',
+                        '  audit_filename: "{run_name}_preference_audit.jsonl"',
+                        '  summary_filename: "{run_name}_preference_summary.json"',
+                        "",
+                    ]
+                ),
+            )
+
+            write_text(
+                source_manifest_path,
+                json.dumps(
+                    {
+                        "stage": "sft",
+                        "base_model": "fake-sft-base",
+                        "adapter_path": str(sft_adapter_path),
+                    }
+                ),
+            )
+            write_text(
+                dpo_manifest_path,
+                json.dumps(
+                    {
+                        "stage": "dpo",
+                        "base_model": "fake-sft-base",
+                        "source_sft_manifest_path": str(source_manifest_path),
+                        "source_adapter_path": str(sft_adapter_path),
+                    }
+                ),
+            )
+            write_text(
+                latest_manifest_path,
+                json.dumps(
+                    {
+                        "stage": "dpo",
+                        "status": "ready",
+                        "base_model": "fake-sft-base",
+                        "adapter_path": str(tmp_path / "runtime" / "checkpoints" / "dpo" / "adapter"),
+                        "schema_version": "1.0.0",
+                        "timestamp_utc": "2026-04-10T00:00:00+00:00",
+                        "report_paths": [str(dpo_manifest_path)],
+                    }
+                ),
+            )
+
+            config = resolve_preference_config(
+                config_path=config_path,
+                repo_root=REPO_ROOT,
+                profile_name="dev",
+            )
+
+            self.assertEqual(config.model_name_or_path, "fake-sft-base")
+            self.assertEqual(Path(config.adapter_path).resolve(), sft_adapter_path.resolve())
+
     def test_split_filtering_keeps_train_rows_by_default(self) -> None:
         samples = load_preference_samples(
             input_path=FIXTURE_PATH,

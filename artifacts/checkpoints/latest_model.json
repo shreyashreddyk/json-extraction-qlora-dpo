@@ -1,19 +1,19 @@
 {
-  "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-qwen2.5-1.5b-qlora-v1/adapter",
+  "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/dpo/dpo-full-colab/adapter",
   "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
   "config_paths": [
-    "/content/drive/MyDrive/json-ft-source/configs/sft.yaml"
+    "/content/drive/MyDrive/json-ft-source/configs/dpo.yaml"
   ],
   "merged_export_path": null,
   "metrics_paths": [
-    "/content/drive/MyDrive/json-ft-source/artifacts/metrics/sft-qwen2.5-1.5b-qlora-v1_sft_summary.json",
-    "/content/drive/MyDrive/json-ft-source/artifacts/metrics/sft-qwen2.5-1.5b-qlora-v1_sft_history.json"
+    "/content/drive/MyDrive/json-ft-source/artifacts/metrics/dpo-full-colab_dpo_summary.json",
+    "/content/drive/MyDrive/json-ft-source/artifacts/metrics/dpo-full-colab_dpo_history.json"
   ],
   "report_paths": [
-    "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-qwen2.5-1.5b-qlora-v1_adapter_manifest.json"
+    "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/dpo-full-colab_dpo_manifest.json"
   ],
   "schema_version": "1.0.0",
-  "stage": "sft",
+  "stage": "dpo",
   "status": "ready",
-  "timestamp_utc": "2026-04-10T17:07:42.751359+00:00"
+  "timestamp_utc": "2026-04-10T23:22:42.775455+00:00"
 }

@@ -91,6 +91,60 @@ def _load_latest_model_manifest_at_path(path: Path, repo_root: Path) -> LatestMo
     return LatestModelManifest(**read_json(path))
 
 
+def _resolve_mirrored_artifact_path(repo_root: Path, path: Path | None) -> Path | None:
+    if path is None:
+        return None
+    if path.exists():
+        return path
+    for subdir in ("checkpoints", "metrics", "reports"):
+        candidate = (repo_root / "artifacts" / subdir / path.name).resolve()
+        if candidate.exists():
+            return candidate
+    return path
+
+
+def _load_optional_json(repo_root: Path, path: Path | None) -> dict[str, Any] | None:
+    resolved_path = _resolve_mirrored_artifact_path(repo_root, path)
+    if resolved_path is None or not resolved_path.exists():
+        return None
+    payload = read_json(resolved_path)
+    return payload if isinstance(payload, dict) else None
+
+
+def _resolve_sft_source_from_latest_manifest(
+    repo_root: Path,
+    manifest: LatestModelManifest | None,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    if manifest is None or manifest.stage != "dpo":
+        return None, None
+
+    for candidate in manifest.report_paths:
+        candidate_path = _resolve_mirrored_artifact_path(repo_root, _resolve_path(repo_root, candidate))
+        payload = _load_optional_json(repo_root, candidate_path)
+        if not payload:
+            continue
+        if payload.get("stage") != "dpo":
+            continue
+
+        source_manifest_path = _resolve_mirrored_artifact_path(
+            repo_root,
+            _resolve_path(repo_root, payload.get("source_sft_manifest_path")),
+        )
+        source_manifest_payload = _load_optional_json(repo_root, source_manifest_path)
+        if source_manifest_payload is not None:
+            return source_manifest_path, source_manifest_payload
+
+        source_adapter_path = payload.get("source_adapter_path")
+        if source_adapter_path:
+            return candidate_path, {
+                "stage": "sft",
+                "base_model": payload.get("base_model"),
+                "adapter_path": source_adapter_path,
+            }
+
+    return None, None
+
+
 def resolve_preference_config(
     *,
     config_path: Path,
@@ -126,21 +180,44 @@ def resolve_preference_config(
         if latest_model_manifest_path is not None
         else None
     )
-    if manifest is not None and manifest.stage != "sft":
+    source_sft_manifest_path = _resolve_path(repo_root, model_config.get("source_sft_manifest"))
+    source_sft_manifest_payload = _load_optional_json(repo_root, source_sft_manifest_path)
+    fallback_sft_manifest_path, fallback_sft_manifest_payload = _resolve_sft_source_from_latest_manifest(
+        repo_root,
+        manifest,
+    )
+
+    if source_sft_manifest_payload is None:
+        source_sft_manifest_path = fallback_sft_manifest_path
+        source_sft_manifest_payload = fallback_sft_manifest_payload
+
+    if manifest is not None and manifest.stage not in {"sft", "dpo"}:
         raise ValueError(
-            "Latest model manifest must point to an SFT adapter before building preference pairs."
+            "Latest model manifest must point to an SFT or DPO adapter before building preference pairs."
         )
 
-    resolved_model_name = model_name_or_path or model_config.get("base_model") or (
-        manifest.base_model if manifest is not None else None
+    resolved_model_name = (
+        model_name_or_path
+        or model_config.get("base_model")
+        or (source_sft_manifest_payload.get("base_model") if source_sft_manifest_payload is not None else None)
+        or (manifest.base_model if manifest is not None else None)
     )
-    resolved_adapter_path = adapter_path or model_config.get("adapter_path") or (
-        manifest.adapter_path if manifest is not None else None
+    resolved_adapter_path = (
+        adapter_path
+        or model_config.get("adapter_path")
+        or (source_sft_manifest_payload.get("adapter_path") if source_sft_manifest_payload is not None else None)
+        or (manifest.adapter_path if manifest is not None and manifest.stage == "sft" else None)
     )
     if not resolved_model_name:
         raise ValueError(
             "Could not resolve a base model. Provide model.base_model in configs/dpo.yaml "
             "or promote an SFT adapter into artifacts/checkpoints/latest_model.json."
+        )
+    if manifest is not None and manifest.stage == "dpo" and not resolved_adapter_path:
+        raise ValueError(
+            "Latest model manifest points to DPO, but the source SFT adapter could not be resolved. "
+            "Set model.source_sft_manifest or model.adapter_path in configs/dpo.yaml, or keep the DPO manifest "
+            "linked to its source SFT manifest."
         )
 
     resolved_input_path = _resolve_path(
