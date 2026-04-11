@@ -1,0 +1,48 @@
+seed: 17
+raw_root: data/fixtures/source_adapter_samples
+runtime_root: null
+eval_ratio: 0.2
+train_target_count: null
+eval_target_count: null
+max_source_share: 0.45
+max_synthetic_share: 0.30
+eval_allow_synthetic: false
+schema_discipline_enabled: false
+
+source_group_weights:
+  domain_task_data: 1.0
+  schema_discipline_data: 0.2
+  synthetic_augmentation_data: 0.0
+
+source_weight_overrides:
+  synthetic_support_tickets_v1: 0.4
+  console_ai_it_helpdesk_synthetic_tickets: 1.0
+  prady06_customer_support_tickets: 0.9
+  cfpb_consumer_complaints: 0.8
+
+augmentation:
+  enabled: true
+  synthetic_source_name: synthetic_hardening_v1
+
+outputs:
+  canonical_output: data/manifests/support_tickets_canonical.jsonl
+  prompt_completion_output: data/manifests/support_tickets_sft_prompt_completion.jsonl
+  messages_output: data/manifests/support_tickets_sft_messages.jsonl
+  eval_output: data/manifests/support_tickets_eval_manifest.jsonl
+  summary_output: data/manifests/support_tickets_dataset_build_summary.json
+  composition_json_output: artifacts/metrics/support_tickets_dataset_composition.json
+  composition_csv_output: artifacts/reports/support_tickets_dataset_composition.csv
+  composition_markdown_output: artifacts/reports/support_tickets_dataset_composition.md
+
+profiles:
+  dev:
+    train_target_count: 12
+    eval_target_count: 4
+    max_source_share: 0.45
+    max_synthetic_share: 0.25
+
+  full:
+    train_target_count: null
+    eval_target_count: null
+    max_source_share: 0.45
+    max_synthetic_share: 0.30

@@ -1,0 +1,64 @@
+sources:
+  - dataset_name: synthetic_support_tickets_v1
+    source_type: local_jsonl
+    license_note: Internal synthetic fixture used for deterministic tests and seed supervision.
+    source_uri_or_path: data/fixtures/support_tickets.jsonl
+    adapter_name: json_extraction
+    source_group: domain_task_data
+    default_inclusion_weight: 0.4
+    enabled_by_default: true
+    source_notes: High-fidelity synthetic seed set. Keep train rows active, but exclude synthetic eval rows from the default held-out manifest.
+
+  - dataset_name: console_ai_it_helpdesk_synthetic_tickets
+    source_type: huggingface
+    license_note: MIT. Confirm downstream usage notes again before publishing external artifacts.
+    source_uri_or_path: Console-AI/IT-helpdesk-synthetic-tickets
+    adapter_name: hf_it_helpdesk_ticket_v1
+    source_group: domain_task_data
+    default_inclusion_weight: 1.0
+    enabled_by_default: true
+    source_notes: Ticket-style rows that strengthen domain phrasing beyond the repo seed fixture.
+    local_fixture_path: data/fixtures/source_adapter_samples/console_ai_it_helpdesk_synthetic_tickets.jsonl
+
+  - dataset_name: prady06_customer_support_tickets
+    source_type: huggingface
+    license_note: cc-by-nc-4.0. Keep the caveat explicit in docs and review generated artifacts before publication.
+    source_uri_or_path: Prady06/customer-support-tickets
+    adapter_name: hf_customer_support_ticket_v1
+    source_group: domain_task_data
+    default_inclusion_weight: 0.9
+    enabled_by_default: true
+    source_notes: Larger customer-support style dataset. Cap its final share so it does not dominate train.
+    local_fixture_path: data/fixtures/source_adapter_samples/prady06_customer_support_tickets.jsonl
+
+  - dataset_name: cfpb_consumer_complaints
+    source_type: local_csv
+    license_note: Official complaint data. Mapping fidelity must stay reviewable because the source domain is finance-heavy.
+    source_uri_or_path: "{raw_root}/cfpb_consumer_complaints.csv"
+    adapter_name: cfpb_complaint_csv_v1
+    source_group: domain_task_data
+    default_inclusion_weight: 0.8
+    enabled_by_default: true
+    source_notes: Real complaint narratives add lexical diversity and more null-heavy customer context.
+    local_fixture_path: data/fixtures/source_adapter_samples/cfpb_consumer_complaints.csv
+
+  - dataset_name: suneeldk_text_json
+    source_type: huggingface
+    license_note: Apache-2.0. Default off because only schema-compatible rows should ever be admitted.
+    source_uri_or_path: suneeldk/text-json
+    adapter_name: hf_schema_discipline_json_v1
+    source_group: schema_discipline_data
+    default_inclusion_weight: 0.2
+    enabled_by_default: false
+    source_notes: Optional schema-discipline source. Accept only rows whose output already validates against the support-ticket schema.
+    local_fixture_path: data/fixtures/source_adapter_samples/suneeldk_text_json.jsonl
+
+  - dataset_name: synthetic_hardening_v1
+    source_type: generated
+    license_note: Generated train-only augmentations derived from accepted canonical task rows.
+    source_uri_or_path: generated://synthetic_hardening_v1
+    adapter_name: synthetic_hardening_v1
+    source_group: synthetic_augmentation_data
+    default_inclusion_weight: 0.0
+    enabled_by_default: true
+    source_notes: Deterministic train-only augmentation layer for paraphrases, noisy variants, and null-preserving hard cases.

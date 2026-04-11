@@ -222,7 +222,7 @@ def resolve_preference_config(
 
     resolved_input_path = _resolve_path(
         repo_root,
-        input_path or pair_generation_config.get("input_path", "data/fixtures/support_tickets.jsonl"),
+        input_path or pair_generation_config.get("input_path", "data/manifests/support_tickets_canonical.jsonl"),
     )
     if resolved_input_path is None or not resolved_input_path.exists():
         raise FileNotFoundError(f"Preference source data does not exist: {resolved_input_path}")

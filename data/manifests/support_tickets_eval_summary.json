@@ -1,16 +1,15 @@
 {
   "config_path": "configs/eval.yaml",
-  "eval_record_count": 3,
-  "input_path": "data/fixtures/support_tickets.jsonl",
+  "eval_record_count": 2,
+  "input_path": "data/manifests/support_tickets_canonical.jsonl",
   "issue_category_counts": {
     "billing": 1,
-    "general_question": 1,
     "technical_bug": 1
   },
   "output_path": "data/manifests/support_tickets_eval_manifest.jsonl",
   "priority_counts": {
-    "low": 1,
-    "urgent": 2
+    "high": 1,
+    "low": 1
   },
   "schema": {
     "name": "support_ticket_extraction",

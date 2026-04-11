@@ -1,0 +1,218 @@
+{
+  "rows": [
+    {
+      "issue_category_counts": {
+        "billing": 1
+      },
+      "priority_counts": {
+        "high": 1
+      },
+      "row_count": 1,
+      "source_dataset": "cfpb_consumer_complaints",
+      "split": "eval",
+      "synthetic_row_count": 0,
+      "synthetic_row_rate": 0.0
+    },
+    {
+      "issue_category_counts": {
+        "billing": 3
+      },
+      "priority_counts": {
+        "high": 1,
+        "medium": 2
+      },
+      "row_count": 3,
+      "source_dataset": "cfpb_consumer_complaints",
+      "split": "train",
+      "synthetic_row_count": 0,
+      "synthetic_row_rate": 0.0
+    },
+    {
+      "issue_category_counts": {
+        "technical_bug": 1
+      },
+      "priority_counts": {
+        "low": 1
+      },
+      "row_count": 1,
+      "source_dataset": "console_ai_it_helpdesk_synthetic_tickets",
+      "split": "eval",
+      "synthetic_row_count": 0,
+      "synthetic_row_rate": 0.0
+    },
+    {
+      "issue_category_counts": {
+        "account_access": 1,
+        "billing": 1,
+        "technical_bug": 1
+      },
+      "priority_counts": {
+        "high": 1,
+        "medium": 1,
+        "urgent": 1
+      },
+      "row_count": 3,
+      "source_dataset": "console_ai_it_helpdesk_synthetic_tickets",
+      "split": "train",
+      "synthetic_row_count": 0,
+      "synthetic_row_rate": 0.0
+    },
+    {
+      "issue_category_counts": {
+        "billing": 1,
+        "feature_request": 1,
+        "general_question": 1,
+        "technical_bug": 1
+      },
+      "priority_counts": {
+        "high": 1,
+        "low": 1,
+        "medium": 1,
+        "urgent": 1
+      },
+      "row_count": 4,
+      "source_dataset": "prady06_customer_support_tickets",
+      "split": "train",
+      "synthetic_row_count": 0,
+      "synthetic_row_rate": 0.0
+    },
+    {
+      "issue_category_counts": {
+        "billing": 2
+      },
+      "priority_counts": {
+        "medium": 2
+      },
+      "row_count": 2,
+      "source_dataset": "synthetic_hardening_v1",
+      "split": "train",
+      "synthetic_row_count": 2,
+      "synthetic_row_rate": 1.0
+    },
+    {
+      "issue_category_counts": {
+        "feature_request": 1,
+        "integration": 1
+      },
+      "priority_counts": {
+        "low": 1,
+        "medium": 1
+      },
+      "row_count": 2,
+      "source_dataset": "synthetic_support_tickets_v1",
+      "split": "train",
+      "synthetic_row_count": 2,
+      "synthetic_row_rate": 1.0
+    }
+  ],
+  "summary": {
+    "active_sources": [
+      "synthetic_support_tickets_v1",
+      "console_ai_it_helpdesk_synthetic_tickets",
+      "prady06_customer_support_tickets",
+      "cfpb_consumer_complaints",
+      "synthetic_hardening_v1"
+    ],
+    "adapter_reject_count": 0,
+    "adapter_reject_counts": {},
+    "adapter_reject_counts_by_source": {},
+    "adapter_reject_examples": [],
+    "artifact_outputs": {
+      "canonical_output": "/Users/shreyashreddy/Desktop/ai-engineering-projects/02-finetuning-turboquant-experiments/json-extraction-qlora-dpo/data/manifests/support_tickets_canonical.jsonl",
+      "eval_output": "/Users/shreyashreddy/Desktop/ai-engineering-projects/02-finetuning-turboquant-experiments/json-extraction-qlora-dpo/data/manifests/support_tickets_eval_manifest.jsonl",
+      "messages_output": "/Users/shreyashreddy/Desktop/ai-engineering-projects/02-finetuning-turboquant-experiments/json-extraction-qlora-dpo/data/manifests/support_tickets_sft_messages.jsonl",
+      "prompt_completion_output": "/Users/shreyashreddy/Desktop/ai-engineering-projects/02-finetuning-turboquant-experiments/json-extraction-qlora-dpo/data/manifests/support_tickets_sft_prompt_completion.jsonl"
+    },
+    "build_config_path": "configs/data_build.yaml",
+    "issue_category_counts": {
+      "account_access": 1,
+      "billing": 8,
+      "feature_request": 2,
+      "general_question": 1,
+      "integration": 1,
+      "technical_bug": 3
+    },
+    "leakage_checks": {
+      "eval_root_count": 2,
+      "is_lineage_clean": true,
+      "leaked_train_row_count": 0,
+      "leaked_train_rows": []
+    },
+    "nullable_field_null_rates": {
+      "customer.account_id": 0.875,
+      "customer.name": 0.8125,
+      "customer.plan_tier": 0.875
+    },
+    "priority_counts": {
+      "high": 4,
+      "low": 3,
+      "medium": 7,
+      "urgent": 2
+    },
+    "product_area_counts": {
+      "account_portal": 2,
+      "api": 3,
+      "billing_portal": 6,
+      "integrations": 2,
+      "other": 2,
+      "unknown": 1
+    },
+    "profile": "full",
+    "prompt_length_chars": {
+      "avg": 1206.86,
+      "count": 14,
+      "max": 1379,
+      "min": 1138
+    },
+    "raw_root": "/Users/shreyashreddy/Desktop/ai-engineering-projects/02-finetuning-turboquant-experiments/json-extraction-qlora-dpo/data/fixtures/source_adapter_samples",
+    "registry_config_path": "configs/data_sources.yaml",
+    "registry_sources": [
+      "synthetic_support_tickets_v1",
+      "console_ai_it_helpdesk_synthetic_tickets",
+      "prady06_customer_support_tickets",
+      "cfpb_consumer_complaints",
+      "synthetic_hardening_v1"
+    ],
+    "runtime_root": null,
+    "schema": {
+      "name": "support_ticket_extraction",
+      "version": "1.0.0"
+    },
+    "seed": 17,
+    "sentiment_counts": {
+      "negative": 3,
+      "neutral": 13
+    },
+    "source_counts": {
+      "cfpb_consumer_complaints": 4,
+      "console_ai_it_helpdesk_synthetic_tickets": 4,
+      "prady06_customer_support_tickets": 4,
+      "synthetic_hardening_v1": 2,
+      "synthetic_support_tickets_v1": 2
+    },
+    "source_dominance_share": {
+      "cfpb_consumer_complaints": 0.25,
+      "console_ai_it_helpdesk_synthetic_tickets": 0.25,
+      "prady06_customer_support_tickets": 0.25,
+      "synthetic_hardening_v1": 0.125,
+      "synthetic_support_tickets_v1": 0.125
+    },
+    "source_group_counts": {
+      "domain_task_data": 14,
+      "synthetic_augmentation_data": 2
+    },
+    "split_counts": {
+      "eval": 2,
+      "train": 14
+    },
+    "summary_length_chars": {
+      "avg": 52.06,
+      "count": 16,
+      "max": 97,
+      "min": 29
+    },
+    "synthetic_row_count": 4,
+    "synthetic_row_rate": 0.25,
+    "total_rows": 16
+  }
+}

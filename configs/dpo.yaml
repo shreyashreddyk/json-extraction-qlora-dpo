@@ -18,7 +18,7 @@ quantization:
   compute_dtype: auto
 
 pair_generation:
-  input_path: data/fixtures/support_tickets.jsonl
+  input_path: data/manifests/support_tickets_canonical.jsonl
   source_format: json_extraction
   source_split: train
   prompt_source: messages

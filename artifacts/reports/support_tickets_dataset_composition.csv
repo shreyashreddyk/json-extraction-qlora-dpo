@@ -1,0 +1,8 @@
+source_dataset,split,row_count,synthetic_row_count,synthetic_row_rate
+cfpb_consumer_complaints,eval,1,0,0.0
+cfpb_consumer_complaints,train,3,0,0.0
+console_ai_it_helpdesk_synthetic_tickets,eval,1,0,0.0
+console_ai_it_helpdesk_synthetic_tickets,train,3,0,0.0
+prady06_customer_support_tickets,train,4,0,0.0
+synthetic_hardening_v1,train,2,2,1.0
+synthetic_support_tickets_v1,train,2,2,1.0

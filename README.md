@@ -128,21 +128,24 @@ The setup notebook will:
 ```bash
 make tree
 make validate-scaffold
-./.venv/bin/python scripts/prepare_sft_data.py --input-path data/fixtures/support_tickets.jsonl
-./.venv/bin/python scripts/prepare_eval_data.py --input-path data/fixtures/support_tickets.jsonl
+./.venv/bin/python scripts/build_dataset_manifests.py --profile dev
 ```
 
 ### 4. Review the generated artifacts
 
-The first real data-prep version now generates:
+The registry-driven data build now generates:
 
+- `data/manifests/support_tickets_canonical.jsonl`
 - `data/manifests/support_tickets_sft_prompt_completion.jsonl`
 - `data/manifests/support_tickets_sft_messages.jsonl`
 - `data/manifests/support_tickets_eval_manifest.jsonl`
-- summary JSON files for SFT and eval prep
+- `data/manifests/support_tickets_dataset_build_summary.json`
+- `artifacts/metrics/support_tickets_dataset_composition.json`
+- `artifacts/reports/support_tickets_dataset_composition.csv`
+- `artifacts/reports/support_tickets_dataset_composition.md`
 
 Open [`notebooks/00_data_audit.ipynb`](notebooks/00_data_audit.ipynb) to inspect
-the schema, class balance, and example exports.
+the schema, source composition, null behavior, and example exports.
 
 ## Design Principles
 
@@ -158,10 +161,11 @@ The recommended operating model is:
 
 1. edit code locally in VS Code
 2. validate locally with fast non-GPU checks
-3. mirror the execution subset into `json-ft-source` with `make drive-push-source`
-4. run Colab notebooks directly from the Drive-backed source tree
-5. persist runtime outputs in `json-ft-runs`
-6. pull mirrored small artifacts back into the repo with `make drive-pull-artifacts`
+3. build the dataset manifests locally with `scripts/build_dataset_manifests.py`
+4. mirror the execution subset into `json-ft-source` with `make drive-push-source`
+5. run Colab notebooks directly from the Drive-backed source tree
+6. persist runtime outputs in `json-ft-runs`
+7. pull mirrored small artifacts back into the repo with `make drive-pull-artifacts`
 
 This repository intentionally separates:
 
@@ -240,24 +244,33 @@ python /content/drive/MyDrive/json-ft-source/scripts/eval_model.py \
   --mirror-predictions-to-repo
 ```
 
+Dataset build:
+
+```bash
+python /content/drive/MyDrive/json-ft-source/scripts/build_dataset_manifests.py \
+  --profile full
+```
+
 ## Exact Staged Workflow
 
 The intended production-style sequence is now:
 
-1. Run `notebooks/00_colab_setup.ipynb`.
-2. Run `notebooks/01_baseline_eval.ipynb` to produce the baseline metrics,
+1. Build the dataset manifests locally, review the composition artifacts, and
+   sync the source tree with `make drive-push-source`.
+2. Run `notebooks/00_colab_setup.ipynb`.
+3. Run `notebooks/01_baseline_eval.ipynb` to produce the baseline metrics,
    report, and prediction artifact under `json-ft-source/artifacts/`.
-3. Run `notebooks/02_sft_review.ipynb` to train the SFT adapter and mirror the
+4. Run `notebooks/02_sft_review.ipynb` to train the SFT adapter and mirror the
    SFT summary, checkpoint manifest, and plots back into
    `json-ft-source/artifacts/`.
-4. Run `notebooks/03_preference_pair_audit.ipynb` to build and review the DPO
+5. Run `notebooks/03_preference_pair_audit.ipynb` to build and review the DPO
    pair dataset under `json-ft-runs/persistent/preferences/<run_name>/`.
-5. Run `notebooks/04_dpo_review.ipynb` to:
+6. Run `notebooks/04_dpo_review.ipynb` to:
    - train the DPO adapter
    - inspect DPO loss and reward traces
    - evaluate SFT and DPO on the held-out manifest
    - build a consolidated baseline vs SFT vs DPO comparison report
-6. Pull the mirrored small artifacts back into the local repo with
+7. Pull the mirrored small artifacts back into the local repo with
    `make drive-pull-artifacts`.
 
 ### DPO training command
@@ -314,10 +327,14 @@ This repository currently provides:
 
 - a production-style Python package layout
 - a strict support-ticket extraction schema implemented with Pydantic
+- a registry-driven multi-source data build layer with provenance-aware
+  canonical manifests
 - validated dataset adapters for canonical, prompt-completion, conversational,
   Nemotron-style, and eval manifest formats
-- script entrypoints for generating SFT and eval manifests
-- generated synthetic fixture data and repo-side manifests under `data/manifests/`
+- script entrypoints for dataset build, SFT, eval, preference generation, DPO,
+  and comparison reporting
+- generated canonical, SFT, eval, and composition artifacts under
+  `data/manifests/` and `artifacts/`
 - Colab runtime helpers for path resolution and latest-model tracking
 - runnable SFT and DPO training CLIs with dry-run validation
 - Colab-oriented notebooks for setup, data audit, baseline review, SFT review,

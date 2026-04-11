@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--input-manifest",
         dest="input_path",
         type=Path,
-        default=Path("data/fixtures/support_tickets.jsonl"),
+        default=Path("data/manifests/support_tickets_canonical.jsonl"),
     )
     parser.add_argument(
         "--source-format",
