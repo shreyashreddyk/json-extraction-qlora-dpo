@@ -1,0 +1,203 @@
+{
+  "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-full-colab/adapter",
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "checkpoint_root": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-full-colab",
+  "config_path": "/content/drive/MyDrive/json-ft-source/configs/sft.yaml",
+  "data_pipeline": {
+    "build_summary": {
+      "leakage_checks": {
+        "eval_root_count": 12450,
+        "is_lineage_clean": true,
+        "leaked_train_row_count": 0,
+        "leaked_train_rows": []
+      },
+      "nullable_field_null_rates": {
+        "customer.account_id": 1.0,
+        "customer.name": 0.9714,
+        "customer.plan_tier": 0.3018
+      },
+      "profile": "full",
+      "schema": {
+        "name": "support_ticket_extraction",
+        "version": "1.0.0"
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "split_counts": {
+        "eval": 12450,
+        "train": 71161
+      },
+      "synthetic_row_rate": 0.2553,
+      "total_rows": 83611
+    },
+    "build_summary_path": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_dataset_build_summary.json",
+    "composition_summary_path": "/content/drive/MyDrive/json-ft-source/artifacts/metrics/support_tickets_dataset_composition.json",
+    "source_composition_snapshot": {
+      "issue_category_counts": {
+        "account_access": 9091,
+        "billing": 7115,
+        "feature_request": 13427,
+        "general_question": 1062,
+        "integration": 4783,
+        "other": 26192,
+        "technical_bug": 21941
+      },
+      "priority_counts": {
+        "high": 28657,
+        "low": 18349,
+        "medium": 30292,
+        "urgent": 6313
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "synthetic_row_rate": 0.2553
+    }
+  },
+  "dataset_format": "messages",
+  "dataset_telemetry": {
+    "effective_batch_size": 256,
+    "subset_selection": {
+      "eval": {
+        "absolute_limit_applied": false,
+        "original_row_count": 12450,
+        "percent_row_count": 1245,
+        "sample_limit": null,
+        "sample_mode": "deterministic_percent",
+        "sample_percent": 0.1,
+        "sample_seed": 17,
+        "selected_fraction": 0.1,
+        "selected_row_count": 1245
+      },
+      "train": {
+        "absolute_limit_applied": false,
+        "original_row_count": 71161,
+        "percent_row_count": 7116,
+        "sample_limit": null,
+        "sample_mode": "deterministic_percent",
+        "sample_percent": 0.1,
+        "sample_seed": 17,
+        "selected_fraction": 0.0999985947358806,
+        "selected_row_count": 7116
+      }
+    },
+    "token_cache": {
+      "enabled": false
+    }
+  },
+  "effective_batch_size": 256,
+  "eval_manifest": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_eval_manifest.jsonl",
+  "eval_record_count": 1245,
+  "history_artifacts": {
+    "eval_loss_curve_path": "/content/drive/MyDrive/json-ft-runs/persistent/plots/sft-full-colab_sft_eval_loss_curve.png",
+    "extra_plot_paths": {
+      "examples_seen": "/content/drive/MyDrive/json-ft-runs/persistent/plots/sft-full-colab_sft_examples_seen_curve.png",
+      "learning_rate": "/content/drive/MyDrive/json-ft-runs/persistent/plots/sft-full-colab_sft_learning_rate_curve.png"
+    },
+    "history_path": "/content/drive/MyDrive/json-ft-runs/persistent/metrics/sft-full-colab_sft_history.json",
+    "loss_curve_path": "/content/drive/MyDrive/json-ft-runs/persistent/plots/sft-full-colab_sft_loss_curve.png"
+  },
+  "logs_dir": "/content/drive/MyDrive/json-ft-runs/persistent/logs/sft/sft-full-colab",
+  "lora": {
+    "alpha": 32,
+    "bias": "none",
+    "dropout": 0.05,
+    "r": 16,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ],
+    "task_type": "CAUSAL_LM"
+  },
+  "max_seq_length": 1024,
+  "profile": "full",
+  "quantization": {
+    "bnb_4bit_quant_type": "nf4",
+    "bnb_4bit_use_double_quant": true,
+    "compute_dtype": "auto",
+    "enabled": true,
+    "load_in_4bit": true
+  },
+  "run_name": "sft-full-colab",
+  "stage": "sft",
+  "status": "completed",
+  "subset_selection": {
+    "eval": {
+      "absolute_limit_applied": false,
+      "original_row_count": 12450,
+      "percent_row_count": 1245,
+      "sample_limit": null,
+      "sample_mode": "deterministic_percent",
+      "sample_percent": 0.1,
+      "sample_seed": 17,
+      "selected_fraction": 0.1,
+      "selected_row_count": 1245
+    },
+    "train": {
+      "absolute_limit_applied": false,
+      "original_row_count": 71161,
+      "percent_row_count": 7116,
+      "sample_limit": null,
+      "sample_mode": "deterministic_percent",
+      "sample_percent": 0.1,
+      "sample_seed": 17,
+      "selected_fraction": 0.0999985947358806,
+      "selected_row_count": 7116
+    }
+  },
+  "train_manifest": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_sft_messages.jsonl",
+  "train_metrics": {
+    "effective_batch_size": 256,
+    "total_flos": 9.99033194531758e+16,
+    "train_loss": 0.0894242324644611,
+    "train_runtime": 1904.1371,
+    "train_samples_per_second": 11.211,
+    "train_steps_per_second": 0.044
+  },
+  "train_record_count": 7116,
+  "trainer_state_path": "/content/drive/MyDrive/json-ft-runs/persistent/logs/sft/sft-full-colab/trainer_state.json",
+  "training": {
+    "completion_only_loss": true,
+    "eval_steps": null,
+    "eval_strategy": "epoch",
+    "gradient_accumulation_steps": 8,
+    "gradient_checkpointing": true,
+    "learning_rate": 0.0002,
+    "logging_steps": 5,
+    "lr_scheduler_type": "cosine",
+    "max_steps": null,
+    "num_train_epochs": 3,
+    "optim": "paged_adamw_32bit",
+    "packing": false,
+    "per_device_eval_batch_size": 32,
+    "per_device_train_batch_size": 32,
+    "report_to": [],
+    "save_steps": null,
+    "save_strategy": "epoch",
+    "save_total_limit": 2,
+    "seed": 17,
+    "warmup_ratio": 0.05,
+    "warmup_steps": null,
+    "weight_decay": 0.0
+  }
+}

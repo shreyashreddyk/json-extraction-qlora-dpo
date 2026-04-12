@@ -5,6 +5,7 @@
 - Syntax metrics are reported separately from semantic metrics.
 - Semantic example ranking uses structured exact-match count plus `actions_requested` F1 as a row-level inspection aid.
 - This row-level ranking is diagnostic only; the headline comparison remains the saved aggregate metrics.
+- Row-level labels classify DPO relative to SFT as `syntax_gain_only`, `semantic_gain`, `semantic_regression`, or `mixed_result`.
 
 ## Stage Metrics
 
@@ -13,187 +14,103 @@
 - Model: `Qwen/Qwen2.5-1.5B-Instruct`
 - Base model: `n/a`
 - Adapter path: `n/a`
-- JSON validity rate: `1.0000`
-- Schema validation pass rate: `1.0000`
-- Hallucinated field rate: `0.0000`
+- JSON validity rate: `0.9998`
+- Schema validation pass rate: `0.9876`
+- Hallucinated field rate: `0.0033`
 - JSON recovery rate: `0.0000`
-- Field-level micro F1: `0.5965`
-- Field-level macro F1: `0.6296`
-- Mean latency (ms): `4033.6954`
+- Field-level micro F1: `0.3030`
+- Field-level macro F1: `0.3008`
+- Mean latency (ms): `10760.6296`
 
 Exact match by categorical field:
-- `issue_category`: `0.6667`
-- `priority`: `0.6667`
-- `product_area`: `0.6667`
-- `sentiment`: `1.0000`
-- `requires_human_followup`: `0.6667`
-- `customer.plan_tier`: `0.6667`
+- `issue_category`: `0.3022`
+- `priority`: `0.1695`
+- `product_area`: `0.2238`
+- `sentiment`: `0.2991`
+- `requires_human_followup`: `0.9579`
+- `customer.plan_tier`: `0.2569`
 
 ### SFT
 
 - Model: `Qwen/Qwen2.5-1.5B-Instruct`
 - Base model: `Qwen/Qwen2.5-1.5B-Instruct`
-- Adapter path: `/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-qwen2.5-1.5b-qlora-v1/adapter`
-- JSON validity rate: `1.0000`
-- Schema validation pass rate: `1.0000`
+- Adapter path: `/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-full-colab/adapter`
+- JSON validity rate: `0.9990`
+- Schema validation pass rate: `0.8492`
 - Hallucinated field rate: `0.0000`
 - JSON recovery rate: `0.0000`
-- Field-level micro F1: `0.6207`
-- Field-level macro F1: `0.6667`
-- Mean latency (ms): `10344.3455`
+- Field-level micro F1: `0.7334`
+- Field-level macro F1: `0.6519`
+- Mean latency (ms): `10773.1347`
 
 Exact match by categorical field:
-- `issue_category`: `1.0000`
-- `priority`: `0.6667`
-- `product_area`: `0.6667`
-- `sentiment`: `1.0000`
-- `requires_human_followup`: `0.6667`
-- `customer.plan_tier`: `0.6667`
+- `issue_category`: `0.4455`
+- `priority`: `0.4524`
+- `product_area`: `0.6086`
+- `sentiment`: `0.8394`
+- `requires_human_followup`: `0.9807`
+- `customer.plan_tier`: `0.5636`
 
 ### DPO
 
 - Model: `Qwen/Qwen2.5-1.5B-Instruct`
 - Base model: `Qwen/Qwen2.5-1.5B-Instruct`
 - Adapter path: `/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/dpo/dpo-full-colab/adapter`
-- JSON validity rate: `1.0000`
-- Schema validation pass rate: `1.0000`
+- JSON validity rate: `0.9984`
+- Schema validation pass rate: `0.9982`
 - Hallucinated field rate: `0.0000`
 - JSON recovery rate: `0.0000`
-- Field-level micro F1: `0.6207`
-- Field-level macro F1: `0.6667`
-- Mean latency (ms): `10266.5931`
+- Field-level micro F1: `0.7730`
+- Field-level macro F1: `0.6871`
+- Mean latency (ms): `16000.4178`
 
 Exact match by categorical field:
-- `issue_category`: `1.0000`
-- `priority`: `0.6667`
-- `product_area`: `0.6667`
-- `sentiment`: `1.0000`
-- `requires_human_followup`: `0.6667`
-- `customer.plan_tier`: `0.6667`
+- `issue_category`: `0.5031`
+- `priority`: `0.4601`
+- `product_area`: `0.6324`
+- `sentiment`: `0.8613`
+- `requires_human_followup`: `0.9802`
+- `customer.plan_tier`: `0.7515`
 
 ## Deltas
 
 ### DPO vs SFT
 
-- JSON validity delta: `0.0000`
-- Schema pass delta: `0.0000`
+- JSON validity delta: `-0.0006`
+- Schema pass delta: `0.1490`
 - Hallucinated field delta: `0.0000`
-- Micro F1 delta: `0.0000`
-- Macro F1 delta: `0.0000`
+- Micro F1 delta: `0.0396`
+- Macro F1 delta: `0.0352`
 
 ### SFT vs Baseline
 
-- JSON validity delta: `0.0000`
-- Schema pass delta: `0.0000`
-- Hallucinated field delta: `0.0000`
-- Micro F1 delta: `0.0242`
-- Macro F1 delta: `0.0370`
+- JSON validity delta: `-0.0009`
+- Schema pass delta: `-0.1384`
+- Hallucinated field delta: `-0.0033`
+- Micro F1 delta: `0.4305`
+- Macro F1 delta: `0.3511`
 
 ### DPO vs Baseline
 
-- JSON validity delta: `0.0000`
-- Schema pass delta: `0.0000`
-- Hallucinated field delta: `0.0000`
-- Micro F1 delta: `0.0242`
-- Macro F1 delta: `0.0370`
+- JSON validity delta: `-0.0014`
+- Schema pass delta: `0.0106`
+- Hallucinated field delta: `-0.0033`
+- Micro F1 delta: `0.4700`
+- Macro F1 delta: `0.3863`
 
-## Where DPO Helped Semantically
-
-No examples were found in this category.
-
-## Where DPO Helped Mostly on Syntax
+## Semantic Gain
 
 No examples were found in this category.
 
-## Where DPO Hurt
+## Syntax Gain Only
 
-### `support-eval-003`
+No examples were found in this category.
 
-DPO changed the output without improving syntax or semantic score relative to SFT. Treat this as a regression-risk example because behavior moved with no measured gain.
+## Semantic Regression
 
-Reference payload:
+No examples were found in this category.
 
-```json
-{
-  "actions_requested": [
-    "Provide documentation about regional data residency availability"
-  ],
-  "customer": {
-    "account_id": null,
-    "name": null,
-    "plan_tier": null
-  },
-  "issue_category": "general_question",
-  "priority": "low",
-  "product_area": "unknown",
-  "requires_human_followup": false,
-  "sentiment": "neutral",
-  "summary": "Prospective customer asks whether regional data residency is available on starter plans and would accept documentation."
-}
-```
+## Mixed Result
 
-Baseline output:
-
-```text
-{
-  "summary": "Regional Data Residency Support Question",
-  "issue_category": "general_question",
-  "priority": "medium",
-  "product_area": "billing_portal",
-  "customer": {
-    "name": "Customer Name",
-    "account_id": "Account ID",
-    "plan_tier": "free"
-  },
-  "sentiment": "neutral",
-  "requires_human_followup": true,
-  "actions_requested": [
-    "Provide documentation on regional data residency support in the starter tier."
-  ]
-}
-```
-
-SFT output:
-
-```text
-{
-  "summary": "Customer inquiry about regional data residency support in the starter tier",
-  "issue_category": "general_question",
-  "priority": "medium",
-  "product_area": "billing_portal",
-  "customer": {
-    "name": "Not provided",
-    "account_id": "Not provided",
-    "plan_tier": "free"
-  },
-  "sentiment": "neutral",
-  "requires_human_followup": true,
-  "actions_requested": [
-    "Provide information about regional data residency support in the starter tier.",
-    "If no documentation exists, provide a link to a relevant document."
-  ]
-}
-```
-
-DPO output:
-
-```text
-{
-  "summary": "Customer inquiry about regional data residency support in the starter tier",
-  "issue_category": "general_question",
-  "priority": "medium",
-  "product_area": "web_app",
-  "customer": {
-    "name": "Not provided",
-    "account_id": "Not provided",
-    "plan_tier": "free"
-  },
-  "sentiment": "neutral",
-  "requires_human_followup": true,
-  "actions_requested": [
-    "Provide information about regional data residency support in the starter tier.",
-    "If no documentation exists, provide a link to a relevant document."
-  ]
-}
-```
+No examples were found in this category.
 

@@ -2,54 +2,73 @@
 
 ## Run Summary
 
+- Stage label: `baseline`
 - Model: `Qwen/Qwen2.5-1.5B-Instruct`
+- Base model: `n/a`
+- Adapter path: `n/a`
+- Merged model path: `n/a`
 - Backend: `local-transformers`
 - Prompt source: `messages`
 - Dataset path: `/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_eval_manifest.jsonl`
 - Config path: `/content/drive/MyDrive/json-ft-source/configs/eval.yaml`
-- Evaluated records: `3`
+- Model manifest path: `n/a`
+- Evaluated records: `12450`
 
-## Headline Metrics
+## Syntax Metrics
 
-- JSON validity rate: `1.0000`
-- Schema validation pass rate: `1.0000`
-- Hallucinated field rate: `0.0000`
+- JSON validity rate: `0.9998`
+- Schema validation pass rate: `0.9876`
+- Hallucinated field rate: `0.0033`
 - JSON recovery rate: `0.0000`
-- Field-level micro F1: `0.5965`
-- Field-level macro F1: `0.6296`
-- Mean latency (ms): `4033.6954`
+
+## Semantic Metrics
+
+- Field-level micro F1: `0.3030`
+- Field-level macro F1: `0.3008`
+
+## Latency
+
+- Mean latency (ms): `10760.6296`
+- P95 latency (ms): `13152.7604`
 
 ## Exact Match by Field
 
-- `issue_category`: `0.6667`
-- `priority`: `0.6667`
-- `product_area`: `0.6667`
-- `sentiment`: `1.0000`
-- `requires_human_followup`: `0.6667`
-- `customer.plan_tier`: `0.6667`
+- `issue_category`: `0.3022`
+- `priority`: `0.1695`
+- `product_area`: `0.2238`
+- `sentiment`: `0.2991`
+- `requires_human_followup`: `0.9579`
+- `customer.plan_tier`: `0.2569`
 
 ## Field-Level Precision / Recall / F1
 
-- `issue_category`: P=`0.6667`, R=`0.6667`, F1=`0.6667`, support=`3`
-- `priority`: P=`0.6667`, R=`0.6667`, F1=`0.6667`, support=`3`
-- `product_area`: P=`0.6667`, R=`0.6667`, F1=`0.6667`, support=`3`
-- `customer.name`: P=`0.6667`, R=`0.6667`, F1=`0.6667`, support=`3`
-- `customer.account_id`: P=`0.6667`, R=`0.6667`, F1=`0.6667`, support=`3`
-- `customer.plan_tier`: P=`0.6667`, R=`0.6667`, F1=`0.6667`, support=`3`
-- `sentiment`: P=`1.0000`, R=`1.0000`, F1=`1.0000`, support=`3`
-- `requires_human_followup`: P=`0.6667`, R=`0.6667`, F1=`0.6667`, support=`3`
-- `actions_requested`: P=`0.0000`, R=`0.0000`, F1=`0.0000`, support=`5`
+- `issue_category`: P=`0.3022`, R=`0.3022`, F1=`0.3022`, support=`12450`
+- `priority`: P=`0.1695`, R=`0.1695`, F1=`0.1695`, support=`12450`
+- `product_area`: P=`0.2238`, R=`0.2238`, F1=`0.2238`, support=`12450`
+- `customer.name`: P=`0.0030`, R=`0.0030`, F1=`0.0030`, support=`12450`
+- `customer.account_id`: P=`0.4949`, R=`0.4948`, F1=`0.4948`, support=`12450`
+- `customer.plan_tier`: P=`0.2570`, R=`0.2569`, F1=`0.2570`, support=`12450`
+- `sentiment`: P=`0.2992`, R=`0.2991`, F1=`0.2991`, support=`12450`
+- `requires_human_followup`: P=`0.9581`, R=`0.9579`, F1=`0.9580`, support=`12450`
+- `actions_requested`: P=`0.0000`, R=`0.0000`, F1=`0.0000`, support=`0`
 
 ## Failure Summary
 
-- Parse failures: `0`
-- Schema failures: `0`
-- Hallucinated predictions: `0`
-- Rows with semantic mismatch after parsing: `3`
+- Parse failures: `2`
+- Schema failures: `155`
+- Hallucinated predictions: `41`
+- Rows with semantic mismatch after parsing: `12450`
+- Null-handling mistakes: `11658`
+- Partial action extraction rows: `0`
+
+## Diagnostics
+
+- Qualitative summary note: Use the example buckets and per-field diagnostics for qualitative review. The free-text summary field remains qualitative and is not scored as an aggregate metric.
+- Prior-stage regressions tracked: `0`
 
 ## Example Failures
 
-### `support-eval-001`
+### `080jm0cxc`
 
 - Parse error: `none`
 - Schema valid: `True`
@@ -58,180 +77,28 @@
 Input:
 
 ```text
-This is Mei Tan from ENT-990. The tax exemption flag disappeared on our latest invoice, so the billing portal generated the wrong total. Please correct the invoice and send the updated PDF to finance before month-end close tomorrow.
+Subject: Request for Zoom Room Access
+
+Hey IT! I hope you're doing well. I'm trying to set up a meeting in one of our Zoom Rooms but realized I don't have the necessary access permissions. Could you assist me in getting access? Thanks a ton! Best, J -- Jordan Smith | Project Coordinator Acme Co. (https://acme.co/) • New York, NY CONFIDENTIALITY NOTICE: The contents of this email message and any attachments are intended solely for the addressee(s) and may contain confidential and/or privileged information and may be legally protected from disclosure. If you are not the intended recipient of this message or their agent, or if this message has been addressed to you in error, please immediately alert the sender by reply email and then delete this message and any attachments. If you are not the intended recipient, you are hereby notified that any use, dissemination, copying, or storage of this message or its attachments is strictly prohibited. DISCLAIMER: Email Does Not Constitute a Binding Agreement. This email does not constitute an agreement to conduct transactions by electronic means and does not create any legally binding contract or enforceable obligation in the absence of a fully signed written contract. Any contract terms contained in this email are subject to approval by Acme Co. and are not binding until Acme Co. provides such approval in writing.
 ```
 
 Model output:
 
 ```text
 {
-  "summary": "Invoice Tax Exemption Flag Disappeared",
-  "issue_category": "technical_bug",
-  "priority": "urgent",
-  "product_area": "billing_portal",
-  "customer": {
-    "name": "Mei Tan",
-    "account_id": "ENT-990",
-    "plan_tier": "enterprise"
-  },
-  "sentiment": "negative",
-  "requires_human_followup": true,
-  "actions_requested": [
-    "Correct the invoice and send the updated PDF to finance before month-end close tomorrow."
-  ]
-}
-```
-
-Reference payload:
-
-```json
-{
-  "actions_requested": [
-    "Correct the invoice total",
-    "Send an updated invoice PDF to finance"
-  ],
-  "customer": {
-    "account_id": "ENT-990",
-    "name": "Mei Tan",
-    "plan_tier": "enterprise"
-  },
-  "issue_category": "billing",
-  "priority": "urgent",
-  "product_area": "billing_portal",
-  "requires_human_followup": true,
-  "sentiment": "negative",
-  "summary": "Enterprise customer reports a missing tax exemption on an invoice and needs a corrected PDF before close."
-}
-```
-
-Parsed payload:
-
-```json
-{
-  "actions_requested": [
-    "Correct the invoice and send the updated PDF to finance before month-end close tomorrow."
-  ],
-  "customer": {
-    "account_id": "ENT-990",
-    "name": "Mei Tan",
-    "plan_tier": "enterprise"
-  },
-  "issue_category": "technical_bug",
-  "priority": "urgent",
-  "product_area": "billing_portal",
-  "requires_human_followup": true,
-  "sentiment": "negative",
-  "summary": "Invoice Tax Exemption Flag Disappeared"
-}
-```
-
-### `support-eval-002`
-
-- Parse error: `none`
-- Schema valid: `True`
-- Unexpected fields: `none`
-
-Input:
-
-```text
-Our API started returning intermittent 500 responses on the /v1/usage endpoint after today's deploy. I'm Noah Kim from account API-321 on the Business plan. Please investigate and share an ETA. We can retry some calls, but our usage dashboards are currently broken.
-```
-
-Model output:
-
-```text
-{
-  "summary": "API returns intermittent 500 responses",
-  "issue_category": "technical_bug",
-  "priority": "urgent",
-  "product_area": "api",
-  "customer": {
-    "name": "Noah Kim",
-    "account_id": "API-321",
-    "plan_tier": "business"
-  },
-  "sentiment": "negative",
-  "requires_human_followup": true,
-  "actions_requested": [
-    "Investigate and provide ETA",
-    "Share ETA with us"
-  ]
-}
-```
-
-Reference payload:
-
-```json
-{
-  "actions_requested": [
-    "Investigate intermittent 500 responses on /v1/usage",
-    "Share an ETA for a fix"
-  ],
-  "customer": {
-    "account_id": "API-321",
-    "name": "Noah Kim",
-    "plan_tier": "business"
-  },
-  "issue_category": "technical_bug",
-  "priority": "urgent",
-  "product_area": "api",
-  "requires_human_followup": true,
-  "sentiment": "negative",
-  "summary": "Business customer reports intermittent API failures on the usage endpoint and requests investigation plus ETA."
-}
-```
-
-Parsed payload:
-
-```json
-{
-  "actions_requested": [
-    "Investigate and provide ETA",
-    "Share ETA with us"
-  ],
-  "customer": {
-    "account_id": "API-321",
-    "name": "Noah Kim",
-    "plan_tier": "business"
-  },
-  "issue_category": "technical_bug",
-  "priority": "urgent",
-  "product_area": "api",
-  "requires_human_followup": true,
-  "sentiment": "negative",
-  "summary": "API returns intermittent 500 responses"
-}
-```
-
-### `support-eval-003`
-
-- Parse error: `none`
-- Schema valid: `True`
-- Unexpected fields: `none`
-
-Input:
-
-```text
-Hi there. We are comparing a few vendors and I can't tell whether your platform supports regional data residency in the starter tier or only on custom contracts. I do not have an account yet. A documentation link is enough if one exists.
-```
-
-Model output:
-
-```text
-{
-  "summary": "Regional Data Residency Support Question",
-  "issue_category": "general_question",
+  "summary": "Zoom Room Access Request",
+  "issue_category": "account_access",
   "priority": "medium",
   "product_area": "billing_portal",
   "customer": {
-    "name": "Customer Name",
-    "account_id": "Account ID",
+    "name": "Jordan Smith",
+    "account_id": "ACME_ACCOUNT_ID",
     "plan_tier": "free"
   },
   "sentiment": "neutral",
   "requires_human_followup": true,
   "actions_requested": [
-    "Provide documentation on regional data residency support in the starter tier."
+    "Request Zoom Room Access"
   ]
 }
 ```
@@ -240,41 +107,350 @@ Reference payload:
 
 ```json
 {
+  "actions_requested": [],
+  "customer": {
+    "account_id": null,
+    "name": "Jordan Smith",
+    "plan_tier": "pro"
+  },
+  "issue_category": "account_access",
+  "priority": "medium",
+  "product_area": "web_app",
+  "requires_human_followup": true,
+  "sentiment": "positive",
+  "summary": "Request for Zoom Room Access"
+}
+```
+
+Parsed payload:
+
+```json
+{
   "actions_requested": [
-    "Provide documentation about regional data residency availability"
+    "Request Zoom Room Access"
+  ],
+  "customer": {
+    "account_id": "ACME_ACCOUNT_ID",
+    "name": "Jordan Smith",
+    "plan_tier": "free"
+  },
+  "issue_category": "account_access",
+  "priority": "medium",
+  "product_area": "billing_portal",
+  "requires_human_followup": true,
+  "sentiment": "neutral",
+  "summary": "Zoom Room Access Request"
+}
+```
+
+### `09fqvnu90`
+
+- Parse error: `none`
+- Schema valid: `True`
+- Unexpected fields: `none`
+
+Input:
+
+```text
+Subject: Access Request for GDrive and GSheets Tools
+
+Hi IT Team, I need access to GDrive and GSheets for project collaboration. Can you please assist? Thanks!
+```
+
+Model output:
+
+```text
+{
+  "summary": "Access Request for GDrive and GSheets",
+  "issue_category": "account_access",
+  "priority": "medium",
+  "product_area": "mobile_app",
+  "customer": {
+    "name": "Customer Name",
+    "account_id": "Account ID",
+    "plan_tier": "pro"
+  },
+  "sentiment": "neutral",
+  "requires_human_followup": true,
+  "actions_requested": [
+    "Provide access to GDrive and GSheets tools for project collaboration."
+  ]
+}
+```
+
+Reference payload:
+
+```json
+{
+  "actions_requested": [],
+  "customer": {
+    "account_id": null,
+    "name": "Jane Doe",
+    "plan_tier": "pro"
+  },
+  "issue_category": "account_access",
+  "priority": "medium",
+  "product_area": "account_portal",
+  "requires_human_followup": true,
+  "sentiment": "positive",
+  "summary": "Access Request for GDrive and GSheets Tools"
+}
+```
+
+Parsed payload:
+
+```json
+{
+  "actions_requested": [
+    "Provide access to GDrive and GSheets tools for project collaboration."
+  ],
+  "customer": {
+    "account_id": "Account ID",
+    "name": "Customer Name",
+    "plan_tier": "pro"
+  },
+  "issue_category": "account_access",
+  "priority": "medium",
+  "product_area": "mobile_app",
+  "requires_human_followup": true,
+  "sentiment": "neutral",
+  "summary": "Access Request for GDrive and GSheets"
+}
+```
+
+### `0k8ro1kdx`
+
+- Parse error: `none`
+- Schema valid: `True`
+- Unexpected fields: `none`
+
+Input:
+
+```text
+Subject: Virtual Backgrounds Not Loading in Video Conferencing Software
+
+I'm having persistent issues with my video conferencing software where the virtual backgrounds fail to load correctly. It seems to require a detailed investigation and manual adjustment of the software settings. Could you also check if there are any updates needed for my graphics drivers?
+```
+
+Model output:
+
+```text
+{
+  "summary": "Virtual Backgrounds Not Loading",
+  "issue_category": "technical_bug",
+  "priority": "urgent",
+  "product_area": "web_app",
+  "customer": {
+    "name": "John Doe",
+    "account_id": "A123456789",
+    "plan_tier": "pro"
+  },
+  "sentiment": "negative",
+  "requires_human_followup": true,
+  "actions_requested": [
+    "Investigate virtual background loading issues",
+    "Check for necessary updates to graphics drivers"
+  ]
+}
+```
+
+Reference payload:
+
+```json
+{
+  "actions_requested": [],
+  "customer": {
+    "account_id": null,
+    "name": "User123",
+    "plan_tier": null
+  },
+  "issue_category": "other",
+  "priority": "medium",
+  "product_area": "other",
+  "requires_human_followup": true,
+  "sentiment": "neutral",
+  "summary": "Virtual Backgrounds Not Loading in Video Conferencing Software"
+}
+```
+
+Parsed payload:
+
+```json
+{
+  "actions_requested": [
+    "Investigate virtual background loading issues",
+    "Check for necessary updates to graphics drivers"
+  ],
+  "customer": {
+    "account_id": "A123456789",
+    "name": "John Doe",
+    "plan_tier": "pro"
+  },
+  "issue_category": "technical_bug",
+  "priority": "urgent",
+  "product_area": "web_app",
+  "requires_human_followup": true,
+  "sentiment": "negative",
+  "summary": "Virtual Backgrounds Not Loading"
+}
+```
+
+### `0mgy5bnab`
+
+- Parse error: `none`
+- Schema valid: `True`
+- Unexpected fields: `none`
+
+Input:
+
+```text
+Subject: Email Synchronization Issues
+
+Hello,\n\nI'm experiencing persistent issues with our enterprise cloud-based email client. Specific email folders intermittently fail to synchronize across my devices. This requires a detailed investigation and manual adjustment of synchronization settings. Could you also inspect the server-side folder mapping configurations?\n\nThanks,
+```
+
+Model output:
+
+```text
+{
+  "summary": "Email Synchronization Issues",
+  "issue_category": "technical_bug",
+  "priority": "urgent",
+  "product_area": "api",
+  "customer": {
+    "name": "Customer Name",
+    "account_id": "Account ID",
+    "plan_tier": "enterprise"
+  },
+  "sentiment": "negative",
+  "requires_human_followup": true,
+  "actions_requested": [
+    "Inspection of server-side folder mapping configurations"
+  ]
+}
+```
+
+Reference payload:
+
+```json
+{
+  "actions_requested": [],
+  "customer": {
+    "account_id": null,
+    "name": "John Doe",
+    "plan_tier": "enterprise"
+  },
+  "issue_category": "technical_bug",
+  "priority": "medium",
+  "product_area": "web_app",
+  "requires_human_followup": true,
+  "sentiment": "positive",
+  "summary": "Email Synchronization Issues"
+}
+```
+
+Parsed payload:
+
+```json
+{
+  "actions_requested": [
+    "Inspection of server-side folder mapping configurations"
+  ],
+  "customer": {
+    "account_id": "Account ID",
+    "name": "Customer Name",
+    "plan_tier": "enterprise"
+  },
+  "issue_category": "technical_bug",
+  "priority": "urgent",
+  "product_area": "api",
+  "requires_human_followup": true,
+  "sentiment": "negative",
+  "summary": "Email Synchronization Issues"
+}
+```
+
+### `0q84tpmtp`
+
+- Parse error: `none`
+- Schema valid: `False`
+- Unexpected fields: `customer.plan_tier`
+
+Input:
+
+```text
+Subject: Email Filter Configuration
+
+Request for Instructions - Configuring Email Filters to Report Phishing Emails
+
+Name: John Doe
+Reports to: Jane Smith
+Department: IT Support
+Title: IT Specialist
+Request date: 10/15/2023
+Expected completion: 10/20/2023
+```
+
+Model output:
+
+```text
+{
+  "summary": "Email Filter Configuration",
+  "issue_category": "technical_bug",
+  "priority": "urgent",
+  "product_area": "billing_portal",
+  "customer": {
+    "name": "John Doe",
+    "account_id": null,
+    "plan_tier": null
+  },
+  "customer.plan_tier": null,
+  "sentiment": "neutral",
+  "requires_human_followup": true,
+  "actions_requested": [
+    "Configure email filters to report phishing emails"
+  ]
+}
+```
+
+Reference payload:
+
+```json
+{
+  "actions_requested": [],
+  "customer": {
+    "account_id": null,
+    "name": "Johndoe",
+    "plan_tier": null
+  },
+  "issue_category": "feature_request",
+  "priority": "medium",
+  "product_area": "other",
+  "requires_human_followup": true,
+  "sentiment": "neutral",
+  "summary": "Email Filter Configuration"
+}
+```
+
+Parsed payload:
+
+```json
+{
+  "actions_requested": [
+    "Configure email filters to report phishing emails"
   ],
   "customer": {
     "account_id": null,
-    "name": null,
+    "name": "John Doe",
     "plan_tier": null
   },
-  "issue_category": "general_question",
-  "priority": "low",
-  "product_area": "unknown",
-  "requires_human_followup": false,
-  "sentiment": "neutral",
-  "summary": "Prospective customer asks whether regional data residency is available on starter plans and would accept documentation."
-}
-```
-
-Parsed payload:
-
-```json
-{
-  "actions_requested": [
-    "Provide documentation on regional data residency support in the starter tier."
-  ],
-  "customer": {
-    "account_id": "Account ID",
-    "name": "Customer Name",
-    "plan_tier": "free"
-  },
-  "issue_category": "general_question",
-  "priority": "medium",
+  "customer.plan_tier": null,
+  "issue_category": "technical_bug",
+  "priority": "urgent",
   "product_area": "billing_portal",
   "requires_human_followup": true,
   "sentiment": "neutral",
-  "summary": "Regional Data Residency Support Question"
+  "summary": "Email Filter Configuration"
 }
 ```
 

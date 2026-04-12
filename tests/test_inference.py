@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from json_ft.inference import (
     InferenceRequest,
+    LocalTransformersInferenceBackend,
     _build_generation_config,
     _build_generation_metadata,
     build_inference_backend,
@@ -130,3 +131,64 @@ class InferenceParsingTest(unittest.TestCase):
         self.assertEqual(backend, "fake-backend")
         _, kwargs = patched.call_args
         self.assertEqual(kwargs["adapter_path"], "/tmp/adapter")
+
+    def test_local_transformers_backend_generate_batch_returns_one_response_per_request(self) -> None:
+        try:
+            import torch
+        except ModuleNotFoundError:
+            self.skipTest("torch is not installed in the local test environment")
+
+        class FakeTokenizer:
+            def __init__(self) -> None:
+                self.pad_token_id = 0
+                self.eos_token_id = 9
+                self.pad_token = "<pad>"
+                self.eos_token = "</s>"
+                self.padding_side = "right"
+
+            def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=True):
+                return " ".join(message["content"] for message in messages)
+
+            def __call__(self, prompts, return_tensors="pt", padding=False, truncation=False):
+                if isinstance(prompts, str):
+                    return {"input_ids": torch.tensor([[1, 2, 3]])}
+                return {
+                    "input_ids": torch.tensor([[0, 1, 2], [3, 4, 5]]),
+                    "attention_mask": torch.tensor([[0, 1, 1], [1, 1, 1]]),
+                }
+
+            def decode(self, tokens, skip_special_tokens=True):
+                last_token = int(tokens[-1])
+                if last_token == 101:
+                    return '{"priority": "high"}'
+                if last_token == 102:
+                    return '{"priority": "low"}'
+                return "{}"
+
+        class FakeModel:
+            def __init__(self) -> None:
+                self.config = SimpleNamespace(pad_token_id=None)
+                self.generation_config = None
+                self.device = None
+
+            def generate(self, **kwargs):
+                input_ids = kwargs["input_ids"]
+                extra = torch.tensor([[101], [102]])
+                return torch.cat([input_ids, extra], dim=1)
+
+        backend = LocalTransformersInferenceBackend(
+            model_name_or_path="fake-model",
+            tokenizer=FakeTokenizer(),
+            model=FakeModel(),
+        )
+
+        requests = [
+            InferenceRequest(prompt="first", max_new_tokens=32, do_sample=False),
+            InferenceRequest(prompt="second", max_new_tokens=32, do_sample=False),
+        ]
+        responses = backend.generate_batch(requests)
+
+        self.assertEqual(len(responses), 2)
+        self.assertEqual(responses[0].parsed_payload["priority"], "high")
+        self.assertEqual(responses[1].parsed_payload["priority"], "low")
+        self.assertEqual(responses[0].generation_kwargs["max_new_tokens"], 32)

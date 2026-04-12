@@ -175,9 +175,10 @@ def _collect_row_evidence(
     dpo_index = _prediction_index(dpo_rows)
     shared_record_ids = sorted(set(baseline_index) & set(sft_index) & set(dpo_index))
 
-    semantic_help: list[dict[str, Any]] = []
-    syntax_only_help: list[dict[str, Any]] = []
-    hurts: list[dict[str, Any]] = []
+    semantic_gain: list[dict[str, Any]] = []
+    syntax_gain_only: list[dict[str, Any]] = []
+    semantic_regression: list[dict[str, Any]] = []
+    mixed_result: list[dict[str, Any]] = []
 
     for record_id in shared_record_ids:
         baseline_row = baseline_index[record_id]
@@ -188,8 +189,13 @@ def _collect_row_evidence(
         sft_syntax = _syntax_tuple(sft_row)
         dpo_syntax = _syntax_tuple(dpo_row)
 
-        if dpo_syntax >= sft_syntax and dpo_semantics["semantic_score"] > sft_semantics["semantic_score"] + 1e-9:
-            semantic_help.append(
+        semantic_improved = dpo_semantics["semantic_score"] > sft_semantics["semantic_score"] + 1e-9
+        semantic_regressed = dpo_semantics["semantic_score"] + 1e-9 < sft_semantics["semantic_score"]
+        syntax_improved = dpo_syntax > sft_syntax
+        syntax_regressed = dpo_syntax < sft_syntax
+
+        if semantic_improved and not syntax_regressed:
+            semantic_gain.append(
                 _build_evidence_example(
                     record_id=record_id,
                     reason=(
@@ -203,8 +209,8 @@ def _collect_row_evidence(
             )
             continue
 
-        if dpo_syntax > sft_syntax and dpo_semantics["semantic_score"] <= sft_semantics["semantic_score"] + 1e-9:
-            syntax_only_help.append(
+        if syntax_improved and not semantic_improved and not semantic_regressed:
+            syntax_gain_only.append(
                 _build_evidence_example(
                     record_id=record_id,
                     reason=(
@@ -219,12 +225,12 @@ def _collect_row_evidence(
             )
             continue
 
-        if dpo_syntax < sft_syntax or dpo_semantics["semantic_score"] + 1e-9 < sft_semantics["semantic_score"]:
-            hurts.append(
+        if semantic_regressed:
+            semantic_regression.append(
                 _build_evidence_example(
                     record_id=record_id,
                     reason=(
-                        "DPO regressed relative to SFT on syntax or semantic correctness. "
+                        "DPO regressed semantically relative to SFT. "
                         f"Syntax {sft_syntax} -> {dpo_syntax}; semantic score {sft_semantics['semantic_score']:.4f} -> "
                         f"{dpo_semantics['semantic_score']:.4f}."
                     ),
@@ -235,17 +241,14 @@ def _collect_row_evidence(
             )
             continue
 
-        if (
-            dpo_row.get("raw_output") != sft_row.get("raw_output")
-            and dpo_syntax == sft_syntax
-            and abs(dpo_semantics["semantic_score"] - sft_semantics["semantic_score"]) <= 1e-9
-        ):
-            hurts.append(
+        if syntax_regressed or dpo_row.get("raw_output") != sft_row.get("raw_output"):
+            mixed_result.append(
                 _build_evidence_example(
                     record_id=record_id,
                     reason=(
-                        "DPO changed the output without improving syntax or semantic score relative to SFT. "
-                        "Treat this as a regression-risk example because behavior moved with no measured gain."
+                        "DPO changed behavior with mixed evidence: syntax, semantics, or output text moved without a clean win. "
+                        f"Syntax {sft_syntax} -> {dpo_syntax}; semantic score {sft_semantics['semantic_score']:.4f} -> "
+                        f"{dpo_semantics['semantic_score']:.4f}."
                     ),
                     baseline_row=baseline_row,
                     sft_row=sft_row,
@@ -254,17 +257,25 @@ def _collect_row_evidence(
             )
 
     sort_key = lambda item: item["dpo"]["semantic"]["semantic_score"] - item["sft"]["semantic"]["semantic_score"]
-    semantic_help = sorted(semantic_help, key=sort_key, reverse=True)[:3]
-    syntax_only_help = sorted(
-        syntax_only_help,
+    semantic_gain = sorted(semantic_gain, key=sort_key, reverse=True)[:3]
+    syntax_gain_only = sorted(
+        syntax_gain_only,
         key=lambda item: (item["dpo"]["syntax_tuple"], -item["dpo"]["semantic"]["semantic_score"]),
         reverse=True,
     )[:3]
-    hurts = sorted(hurts, key=sort_key)[:3]
+    semantic_regression = sorted(semantic_regression, key=sort_key)[:3]
+    mixed_result = sorted(
+        mixed_result,
+        key=lambda item: (
+            item["dpo"]["semantic"]["semantic_score"] - item["sft"]["semantic"]["semantic_score"],
+            item["dpo"]["syntax_tuple"],
+        ),
+    )[:3]
     return {
-        "dpo_semantic_help": semantic_help,
-        "dpo_syntax_only_help": syntax_only_help,
-        "dpo_hurts": hurts,
+        "semantic_gain": semantic_gain,
+        "syntax_gain_only": syntax_gain_only,
+        "semantic_regression": semantic_regression,
+        "mixed_result": mixed_result,
     }
 
 
@@ -360,6 +371,7 @@ def render_comparison_report(summary: dict[str, Any]) -> str:
         "- Syntax metrics are reported separately from semantic metrics.",
         "- Semantic example ranking uses structured exact-match count plus `actions_requested` F1 as a row-level inspection aid.",
         "- This row-level ranking is diagnostic only; the headline comparison remains the saved aggregate metrics.",
+        "- Row-level labels classify DPO relative to SFT as `syntax_gain_only`, `semantic_gain`, `semantic_regression`, or `mixed_result`.",
         "",
         "## Stage Metrics",
         "",
@@ -397,9 +409,10 @@ def render_comparison_report(summary: dict[str, Any]) -> str:
             "",
         ]
     )
-    lines.extend(_render_example_group("Where DPO Helped Semantically", evidence["dpo_semantic_help"]))
-    lines.extend(_render_example_group("Where DPO Helped Mostly on Syntax", evidence["dpo_syntax_only_help"]))
-    lines.extend(_render_example_group("Where DPO Hurt", evidence["dpo_hurts"]))
+    lines.extend(_render_example_group("Semantic Gain", evidence["semantic_gain"]))
+    lines.extend(_render_example_group("Syntax Gain Only", evidence["syntax_gain_only"]))
+    lines.extend(_render_example_group("Semantic Regression", evidence["semantic_regression"]))
+    lines.extend(_render_example_group("Mixed Result", evidence["mixed_result"]))
     return "\n".join(lines) + "\n"
 
 
@@ -484,6 +497,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     summary = {
         "run_name": args.run_name,
+        "classification_basis": "DPO relative to SFT",
         "stages": stages,
         "deltas": deltas,
         "row_evidence": row_evidence,

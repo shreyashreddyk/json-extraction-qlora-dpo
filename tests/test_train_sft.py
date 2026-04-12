@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from json_ft.utils import read_json, write_jsonl, write_text
+from json_ft.sft import resolve_sft_config
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -58,8 +59,17 @@ def build_sft_config(train_manifest: Path, eval_manifest: Path) -> str:
             "data:",
             f"  train_manifest: {train_manifest}",
             f"  eval_manifest: {eval_manifest}",
+            "  build_summary_path: data/manifests/support_tickets_dataset_build_summary.json",
+            "  composition_summary_path: artifacts/metrics/support_tickets_dataset_composition.json",
             "  dataset_format: messages",
             "  max_seq_length: 1024",
+            "  train_sample_percent: null",
+            "  eval_sample_percent: null",
+            "  sample_seed: 17",
+            "  token_cache:",
+            "    enabled: true",
+            "    cache_root: persistent/tokenized/sft",
+            "    mode: rendered_messages",
             "quantization:",
             "  enabled: true",
             "  load_in_4bit: true",
@@ -110,11 +120,17 @@ def build_sft_config(train_manifest: Path, eval_manifest: Path) -> str:
             "      logging_steps: 5",
             "      eval_strategy: epoch",
             "      save_strategy: epoch",
+            "  colab_full:",
+            "    training:",
+            "      logging_steps: 5",
             "artifacts:",
             '  summary_filename: "{run_name}_sft_summary.json"',
             '  history_filename: "{run_name}_sft_history.json"',
             '  loss_curve_filename: "{run_name}_sft_loss_curve.png"',
             '  eval_loss_curve_filename: "{run_name}_sft_eval_loss_curve.png"',
+            '  learning_rate_curve_filename: "{run_name}_sft_learning_rate_curve.png"',
+            '  examples_seen_curve_filename: "{run_name}_sft_examples_seen_curve.png"',
+            '  tokens_seen_curve_filename: "{run_name}_sft_tokens_seen_curve.png"',
             '  checkpoint_manifest_filename: "{run_name}_adapter_manifest.json"',
             "",
         ]
@@ -184,6 +200,26 @@ class FakeTrainer:
 
 
 class TrainSftCliTest(unittest.TestCase):
+    def test_resolve_sft_config_colab_full_alias_maps_to_full(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            train_manifest = tmp_path / "train.jsonl"
+            eval_manifest = tmp_path / "eval.jsonl"
+            config_path = tmp_path / "sft.yaml"
+
+            write_jsonl(train_manifest, [build_train_row()])
+            write_jsonl(eval_manifest, [build_eval_row()])
+            write_text(config_path, build_sft_config(train_manifest, eval_manifest))
+
+            config = resolve_sft_config(
+                config_path=config_path,
+                repo_root=tmp_path,
+                profile_name="colab_full",
+            )
+
+            self.assertEqual(config.profile_name, "full")
+            self.assertTrue(config.token_cache["enabled"])
+
     def test_train_sft_dry_run_writes_summary_and_manifest(self) -> None:
         module = load_train_sft_script_module()
 
@@ -222,8 +258,102 @@ class TrainSftCliTest(unittest.TestCase):
             self.assertEqual(summary["profile"], "dev")
             self.assertEqual(summary["train_record_count"], 1)
             self.assertEqual(summary["eval_record_count"], 1)
+            self.assertTrue(summary["dataset_telemetry"]["token_cache"]["enabled"])
             self.assertEqual(checkpoint_manifest["status"], "dry_run_ready")
             self.assertEqual(checkpoint_manifest["adapter_path"], summary["adapter_path"])
+
+    def test_train_sft_dry_run_applies_batch_size_cli_overrides(self) -> None:
+        module = load_train_sft_script_module()
+
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            train_manifest = tmp_path / "train.jsonl"
+            eval_manifest = tmp_path / "eval.jsonl"
+            config_path = tmp_path / "sft.yaml"
+            runtime_root = tmp_path / "runtime"
+
+            write_jsonl(train_manifest, [build_train_row()])
+            write_jsonl(eval_manifest, [build_eval_row()])
+            write_text(config_path, build_sft_config(train_manifest, eval_manifest))
+
+            exit_code = module.main(
+                [
+                    "--config",
+                    str(config_path),
+                    "--profile",
+                    "full",
+                    "--run-name",
+                    "override-batches",
+                    "--runtime-root",
+                    str(runtime_root),
+                    "--per-device-train-batch-size",
+                    "4",
+                    "--per-device-eval-batch-size",
+                    "3",
+                    "--dry-run",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            summary = read_json(runtime_root / "persistent" / "metrics" / "override-batches_sft_summary.json")
+            checkpoint_manifest = read_json(
+                runtime_root
+                / "persistent"
+                / "checkpoints"
+                / "sft"
+                / "override-batches"
+                / "override-batches_adapter_manifest.json"
+            )
+
+            self.assertEqual(summary["training"]["per_device_train_batch_size"], 4)
+            self.assertEqual(summary["training"]["per_device_eval_batch_size"], 3)
+            self.assertEqual(summary["effective_batch_size"], 32)
+            self.assertEqual(checkpoint_manifest["training"]["per_device_train_batch_size"], 4)
+            self.assertEqual(checkpoint_manifest["training"]["per_device_eval_batch_size"], 3)
+
+    def test_train_sft_dry_run_applies_sample_percent_cli_overrides(self) -> None:
+        module = load_train_sft_script_module()
+
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            train_manifest = tmp_path / "train.jsonl"
+            eval_manifest = tmp_path / "eval.jsonl"
+            config_path = tmp_path / "sft.yaml"
+            runtime_root = tmp_path / "runtime"
+
+            write_jsonl(train_manifest, [build_train_row() for _ in range(8)])
+            write_jsonl(eval_manifest, [build_eval_row() for _ in range(4)])
+            write_text(config_path, build_sft_config(train_manifest, eval_manifest))
+
+            exit_code = module.main(
+                [
+                    "--config",
+                    str(config_path),
+                    "--profile",
+                    "full",
+                    "--run-name",
+                    "override-sampling",
+                    "--runtime-root",
+                    str(runtime_root),
+                    "--train-sample-percent",
+                    "0.5",
+                    "--eval-sample-percent",
+                    "0.5",
+                    "--sample-seed",
+                    "23",
+                    "--dry-run",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            summary = read_json(runtime_root / "persistent" / "metrics" / "override-sampling_sft_summary.json")
+
+            self.assertEqual(summary["train_record_count"], 4)
+            self.assertEqual(summary["eval_record_count"], 2)
+            self.assertEqual(summary["subset_selection"]["train"]["original_row_count"], 8)
+            self.assertEqual(summary["subset_selection"]["train"]["selected_row_count"], 4)
+            self.assertEqual(summary["subset_selection"]["train"]["sample_percent"], 0.5)
+            self.assertEqual(summary["subset_selection"]["train"]["sample_seed"], 23)
 
     def test_train_sft_fake_training_writes_history_plots_and_adapter_manifest(self) -> None:
         module = load_train_sft_script_module()
@@ -244,6 +374,7 @@ class TrainSftCliTest(unittest.TestCase):
                     trainer=FakeTrainer(artifacts.checkpoint_root),
                     model=SimpleNamespace(),
                     tokenizer=FakeTokenizer(),
+                    dataset_telemetry={"token_cache": {"enabled": False}, "effective_batch_size": 2},
                 )
 
             with patch.object(module, "build_trainer_bundle", side_effect=fake_build_trainer_bundle):
@@ -270,11 +401,15 @@ class TrainSftCliTest(unittest.TestCase):
 
             self.assertEqual(summary["status"], "completed")
             self.assertIn("train_runtime", summary["train_metrics"])
+            self.assertEqual(summary["effective_batch_size"], 2)
             self.assertEqual(len(history["train_loss"]), 2)
             self.assertEqual(len(history["eval_loss"]), 1)
+            self.assertIn("learning_rate", history["scalar_series"])
+            self.assertIn("examples_seen", history["scalar_series"])
             self.assertEqual(checkpoint_manifest["status"], "completed")
             self.assertTrue((runtime_root / "persistent" / "plots" / "fake-train_sft_loss_curve.png").exists())
             self.assertTrue((runtime_root / "persistent" / "plots" / "fake-train_sft_eval_loss_curve.png").exists())
+            self.assertTrue((runtime_root / "persistent" / "plots" / "fake-train_sft_learning_rate_curve.png").exists())
             self.assertTrue(
                 (runtime_root / "persistent" / "checkpoints" / "sft" / "fake-train" / "adapter" / "adapter_model.safetensors").exists()
             )

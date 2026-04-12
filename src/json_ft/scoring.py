@@ -19,6 +19,11 @@ STRUCTURED_PREFERENCE_FIELDS = (
     "sentiment",
     "requires_human_followup",
 )
+NULLABLE_PREFERENCE_FIELDS = (
+    "customer.name",
+    "customer.account_id",
+    "customer.plan_tier",
+)
 
 
 def _nested_value(payload: dict[str, Any] | None, field_path: str) -> Any:
@@ -88,11 +93,15 @@ class CandidateScorecard:
     actions_tp: int
     actions_fp: int
     actions_fn: int
-    summary_f1: float
+    summary_faithfulness_proxy: float
     summary_word_count: int
     summary_overlap: int
     summary_fp: int
     summary_fn: int
+    null_handling_mistake_count: int
+    concision_score: float
+    dominant_failure_mode: str
+    numeric_score: float
     stable_text_key: str
 
     @property
@@ -114,8 +123,10 @@ class CandidateScorecard:
             self.hallucinated_key_count,
             -self.structured_field_matches,
             -self.actions_f1,
-            -self.summary_f1,
+            -self.summary_faithfulness_proxy,
+            self.null_handling_mistake_count,
             self.summary_word_count,
+            -self.concision_score,
             self.stable_text_key,
         )
 
@@ -133,11 +144,15 @@ class CandidateScorecard:
             "actions_tp": self.actions_tp,
             "actions_fp": self.actions_fp,
             "actions_fn": self.actions_fn,
-            "summary_f1": self.summary_f1,
+            "summary_faithfulness_proxy": self.summary_faithfulness_proxy,
             "summary_word_count": self.summary_word_count,
             "summary_overlap": self.summary_overlap,
             "summary_fp": self.summary_fp,
             "summary_fn": self.summary_fn,
+            "null_handling_mistake_count": self.null_handling_mistake_count,
+            "concision_score": self.concision_score,
+            "dominant_failure_mode": self.dominant_failure_mode,
+            "numeric_score": self.numeric_score,
             "ranking_key": list(self.ranking_key),
         }
 
@@ -231,9 +246,38 @@ def build_candidate_scorecard(
     reference_summary = str(_nested_value(reference_payload, "summary") or "")
     summary_tokens = _normalized_tokens(predicted_summary)
     reference_tokens = _normalized_tokens(reference_summary)
-    summary_f1, summary_overlap, summary_fp, summary_fn = _token_f1(summary_tokens, reference_tokens)
+    summary_faithfulness_proxy, summary_overlap, summary_fp, summary_fn = _token_f1(summary_tokens, reference_tokens)
 
     hallucinated_paths = tuple(sorted(validation.unexpected_fields)) if validation is not None else ()
+    null_handling_mistake_count = sum(
+        1
+        for field_name in NULLABLE_PREFERENCE_FIELDS
+        if _nested_value(reference_payload, field_name) is None
+        and _nested_value(parsed_payload, field_name) not in (None, "", [])
+    )
+    if parsed_payload is None:
+        dominant_failure_mode = "parse_failure"
+    elif validation is None or not validation.is_valid:
+        dominant_failure_mode = "schema_failure"
+    elif hallucinated_paths:
+        dominant_failure_mode = "hallucinated_keys"
+    elif null_handling_mistake_count:
+        dominant_failure_mode = "null_handling_mistake"
+    elif structured_field_matches < structured_field_total or actions_f1 < 1.0:
+        dominant_failure_mode = "semantic_mismatch"
+    else:
+        dominant_failure_mode = "clean"
+    concision_score = 1.0 if len(summary_tokens) <= 32 else 32.0 / len(summary_tokens)
+    numeric_score = (
+        float(int(parsed_payload is not None)) * 5.0
+        + float(int(bool(validation.is_valid) if validation is not None else False)) * 5.0
+        - float(len(hallucinated_paths)) * 2.0
+        + float(structured_field_matches) * 1.5
+        + actions_f1 * 2.0
+        + summary_faithfulness_proxy * 1.5
+        - float(null_handling_mistake_count) * 1.5
+        + concision_score * 0.5
+    )
     return CandidateScorecard(
         parses_json=parsed_payload is not None,
         schema_valid=bool(validation.is_valid) if validation is not None else False,
@@ -246,11 +290,15 @@ def build_candidate_scorecard(
         actions_tp=actions_tp,
         actions_fp=actions_fp,
         actions_fn=actions_fn,
-        summary_f1=summary_f1,
+        summary_faithfulness_proxy=summary_faithfulness_proxy,
         summary_word_count=len(summary_tokens),
         summary_overlap=summary_overlap,
         summary_fp=summary_fp,
         summary_fn=summary_fn,
+        null_handling_mistake_count=null_handling_mistake_count,
+        concision_score=concision_score,
+        dominant_failure_mode=dominant_failure_mode,
+        numeric_score=numeric_score,
         stable_text_key=stable_text_key,
     )
 
@@ -363,10 +411,15 @@ def explain_preference_decision(chosen: RankedCandidate, rejected: RankedCandida
             "Chosen matched the requested actions more accurately than rejected "
             f"({chosen_card.actions_f1:.4f} vs {rejected_card.actions_f1:.4f})."
         )
-    if chosen_card.summary_f1 > rejected_card.summary_f1:
+    if chosen_card.null_handling_mistake_count < rejected_card.null_handling_mistake_count:
+        return (
+            "Chosen respected nullable customer fields better than rejected "
+            f"({chosen_card.null_handling_mistake_count} vs {rejected_card.null_handling_mistake_count} mistakes)."
+        )
+    if chosen_card.summary_faithfulness_proxy > rejected_card.summary_faithfulness_proxy:
         return (
             "Chosen summary stayed closer to the gold summary than rejected "
-            f"({chosen_card.summary_f1:.4f} vs {rejected_card.summary_f1:.4f})."
+            f"({chosen_card.summary_faithfulness_proxy:.4f} vs {rejected_card.summary_faithfulness_proxy:.4f})."
         )
     if chosen_card.summary_word_count < rejected_card.summary_word_count:
         return (

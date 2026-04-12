@@ -8,6 +8,8 @@ max_source_share: 0.45
 max_synthetic_share: 0.30
 eval_allow_synthetic: false
 schema_discipline_enabled: false
+prefer_local_fixtures: true
+allow_fixture_fallback: true
 
 source_group_weights:
   domain_task_data: 1.0
@@ -40,9 +42,13 @@ profiles:
     eval_target_count: 4
     max_source_share: 0.45
     max_synthetic_share: 0.25
+    prefer_local_fixtures: true
+    allow_fixture_fallback: true
 
   full:
     train_target_count: null
     eval_target_count: null
     max_source_share: 0.45
     max_synthetic_share: 0.30
+    prefer_local_fixtures: false
+    allow_fixture_fallback: false

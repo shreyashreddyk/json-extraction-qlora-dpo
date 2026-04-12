@@ -10,6 +10,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from json_ft.utils import read_json, write_jsonl, write_text
+from json_ft.dpo import resolve_dpo_config
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -51,11 +52,15 @@ def build_dpo_config(preference_manifest: Path) -> str:
             "  compute_dtype: auto",
             "pair_generation:",
             "  input_path: data/fixtures/support_tickets.jsonl",
+            "  build_summary_path: data/manifests/support_tickets_dataset_build_summary.json",
+            "  composition_summary_path: artifacts/metrics/support_tickets_dataset_composition.json",
             "  source_format: json_extraction",
             "  source_split: train",
             "  prompt_source: messages",
             "  candidate_count: 3",
             "  sample_limit: 3",
+            "  quality_gates:",
+            "    minimum_score_gap: 0.2",
             "  generation:",
             "    max_new_tokens: 128",
             "    temperature: 0.8",
@@ -67,6 +72,9 @@ def build_dpo_config(preference_manifest: Path) -> str:
             "  eval_preference_manifest: null",
             "  train_sample_limit: null",
             "  eval_sample_limit: null",
+            "  train_sample_percent: null",
+            "  eval_sample_percent: null",
+            "  sample_seed: 17",
             "  beta: 0.1",
             "  loss_type: sigmoid",
             "  learning_rate: 5.0e-6",
@@ -97,6 +105,9 @@ def build_dpo_config(preference_manifest: Path) -> str:
             "      save_strategy: steps",
             "      save_steps: 1",
             "  full:",
+            "    training:",
+            "      train_sample_limit: null",
+            "  colab_full:",
             "    training:",
             "      train_sample_limit: null",
             "artifacts:",
@@ -177,6 +188,25 @@ class FakeTrainer:
 
 
 class TrainDpoCliTest(unittest.TestCase):
+    def test_resolve_dpo_config_colab_full_alias_maps_to_full(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            preference_manifest = tmp_path / "prefs.jsonl"
+            config_path = tmp_path / "dpo.yaml"
+
+            write_jsonl(preference_manifest, [build_preference_row()])
+            write_text(config_path, build_dpo_config(preference_manifest))
+
+            config = resolve_dpo_config(
+                config_path=config_path,
+                repo_root=tmp_path,
+                profile_name="colab_full",
+                preference_manifest=preference_manifest,
+            )
+
+            self.assertEqual(config.profile_name, "full")
+            self.assertIn("minimum_score_gap", config.quality_gates)
+
     def test_train_dpo_dry_run_writes_summary_and_manifest(self) -> None:
         module = load_train_dpo_script_module()
 
@@ -212,8 +242,106 @@ class TrainDpoCliTest(unittest.TestCase):
             self.assertEqual(summary["status"], "dry_run_ready")
             self.assertEqual(summary["profile"], "dev")
             self.assertEqual(summary["train_record_count"], 1)
+            self.assertEqual(summary["effective_batch_size"], 2)
             self.assertEqual(checkpoint_manifest["status"], "dry_run_ready")
             self.assertEqual(checkpoint_manifest["preference_manifest"], str(preference_manifest.resolve()))
+
+    def test_train_dpo_dry_run_applies_sample_percent_cli_overrides(self) -> None:
+        module = load_train_dpo_script_module()
+
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            preference_manifest = tmp_path / "prefs.jsonl"
+            config_path = tmp_path / "dpo.yaml"
+            runtime_root = tmp_path / "runtime"
+
+            write_jsonl(preference_manifest, [build_preference_row() for _ in range(10)])
+            write_text(config_path, build_dpo_config(preference_manifest))
+
+            exit_code = module.main(
+                [
+                    "--config",
+                    str(config_path),
+                    "--profile",
+                    "full",
+                    "--run-name",
+                    "override-dpo-sampling",
+                    "--runtime-root",
+                    str(runtime_root),
+                    "--train-sample-percent",
+                    "0.4",
+                    "--sample-seed",
+                    "29",
+                    "--dry-run",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            summary = read_json(runtime_root / "persistent" / "metrics" / "override-dpo-sampling_dpo_summary.json")
+            checkpoint_manifest = read_json(
+                runtime_root
+                / "persistent"
+                / "checkpoints"
+                / "dpo"
+                / "override-dpo-sampling"
+                / "override-dpo-sampling_dpo_manifest.json"
+            )
+
+            self.assertEqual(summary["train_record_count"], 4)
+            self.assertEqual(summary["subset_selection"]["train"]["original_row_count"], 10)
+            self.assertEqual(summary["subset_selection"]["train"]["selected_row_count"], 4)
+            self.assertEqual(summary["subset_selection"]["train"]["sample_percent"], 0.4)
+            self.assertEqual(checkpoint_manifest["subset_selection"]["train"]["sample_seed"], 29)
+
+    def test_train_dpo_dry_run_applies_batch_cli_overrides(self) -> None:
+        module = load_train_dpo_script_module()
+
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            preference_manifest = tmp_path / "prefs.jsonl"
+            config_path = tmp_path / "dpo.yaml"
+            runtime_root = tmp_path / "runtime"
+
+            write_jsonl(preference_manifest, [build_preference_row() for _ in range(4)])
+            write_text(config_path, build_dpo_config(preference_manifest))
+
+            exit_code = module.main(
+                [
+                    "--config",
+                    str(config_path),
+                    "--profile",
+                    "full",
+                    "--run-name",
+                    "override-dpo-batch",
+                    "--runtime-root",
+                    str(runtime_root),
+                    "--per-device-train-batch-size",
+                    "3",
+                    "--per-device-eval-batch-size",
+                    "2",
+                    "--gradient-accumulation-steps",
+                    "5",
+                    "--dry-run",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            summary = read_json(runtime_root / "persistent" / "metrics" / "override-dpo-batch_dpo_summary.json")
+            checkpoint_manifest = read_json(
+                runtime_root
+                / "persistent"
+                / "checkpoints"
+                / "dpo"
+                / "override-dpo-batch"
+                / "override-dpo-batch_dpo_manifest.json"
+            )
+
+            self.assertEqual(summary["training"]["per_device_train_batch_size"], 3)
+            self.assertEqual(summary["training"]["per_device_eval_batch_size"], 2)
+            self.assertEqual(summary["training"]["gradient_accumulation_steps"], 5)
+            self.assertEqual(summary["effective_batch_size"], 15)
+            self.assertEqual(checkpoint_manifest["training"]["per_device_train_batch_size"], 3)
+            self.assertEqual(checkpoint_manifest["training"]["gradient_accumulation_steps"], 5)
 
     def test_train_dpo_fake_training_writes_history_reward_plots_and_manifest(self) -> None:
         module = load_train_dpo_script_module()
@@ -259,6 +387,7 @@ class TrainDpoCliTest(unittest.TestCase):
 
             self.assertEqual(summary["status"], "completed")
             self.assertIn("train_runtime", summary["train_metrics"])
+            self.assertEqual(summary["effective_batch_size"], 2)
             self.assertIsNotNone(summary["history_artifacts"]["loss_curve_path"])
             self.assertEqual(len(history["train_loss"]), 2)
             self.assertIn("rewards/chosen", history["scalar_series"])

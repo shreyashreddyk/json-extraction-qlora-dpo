@@ -29,7 +29,11 @@ from json_ft.runtime import (
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=Path("configs/dpo.yaml"))
-    parser.add_argument("--profile", choices=("dev", "full"), default="full")
+    parser.add_argument(
+        "--profile",
+        choices=("dev", "full", "colab_full", "large_gpu_full"),
+        default="full",
+    )
     parser.add_argument("--run-name", default="dpo-qwen2.5-1.5b-v1")
     parser.add_argument("--runtime-root", type=Path, default=None)
     parser.add_argument("--preference-manifest", type=Path, default=None)
@@ -37,6 +41,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base-model", default=None)
     parser.add_argument("--adapter-path", default=None)
     parser.add_argument("--merged-model-path", default=None)
+    parser.add_argument("--per-device-train-batch-size", type=int, default=None)
+    parser.add_argument("--per-device-eval-batch-size", type=int, default=None)
+    parser.add_argument("--gradient-accumulation-steps", type=int, default=None)
+    parser.add_argument("--train-sample-percent", type=float, default=None)
+    parser.add_argument("--eval-sample-percent", type=float, default=None)
+    parser.add_argument("--sample-seed", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--mirror-metrics-to-repo", action="store_true")
     parser.add_argument("--mirror-plots-to-repo", action="store_true")
@@ -63,16 +73,28 @@ def main(argv: list[str] | None = None) -> int:
         base_model=args.base_model,
         adapter_path=args.adapter_path,
         merged_model_path=args.merged_model_path,
+        training_overrides={
+            "per_device_train_batch_size": args.per_device_train_batch_size,
+            "per_device_eval_batch_size": args.per_device_eval_batch_size,
+            "gradient_accumulation_steps": args.gradient_accumulation_steps,
+            "train_sample_percent": args.train_sample_percent,
+            "eval_sample_percent": args.eval_sample_percent,
+            "sample_seed": args.sample_seed,
+        },
     )
     artifacts = resolve_dpo_output_paths(context, args.run_name, artifact_config=config.artifacts)
-    train_records = load_dpo_preference_records(
+    train_records, train_subset_metadata = load_dpo_preference_records(
         config.preference_manifest,
         sample_limit=config.train_sample_limit,
+        sample_percent=config.train_sample_percent,
+        sample_seed=config.sample_seed,
         required=not args.dry_run,
     )
-    eval_records = load_dpo_preference_records(
+    eval_records, eval_subset_metadata = load_dpo_preference_records(
         config.eval_preference_manifest,
         sample_limit=config.eval_sample_limit,
+        sample_percent=config.eval_sample_percent,
+        sample_seed=config.sample_seed,
         required=False,
     )
 
@@ -86,8 +108,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Source adapter path: {config.adapter_path or '<none>'}")
     print(f"Preference manifest: {config.preference_manifest or '<unresolved>'}")
     print(f"Eval preference manifest: {config.eval_preference_manifest or '<none>'}")
+    print(f"Dataset build summary: {config.build_summary_path}")
+    print(f"Dataset composition summary: {config.composition_summary_path}")
+    print(f"Pair quality gates: {config.quality_gates}")
     print(f"Train rows: {len(train_records) if train_records else 0}")
     print(f"Eval rows: {len(eval_records)}")
+    print(f"Train subset: {train_subset_metadata.to_dict()}")
+    print(f"Eval subset: {eval_subset_metadata.to_dict()}")
     print(f"Adapter output: {artifacts.adapter_dir}")
     print(format_runtime_summary(context))
     print(
@@ -105,6 +132,8 @@ def main(argv: list[str] | None = None) -> int:
             run_name=args.run_name,
             train_record_count=len(train_records) if train_records else None,
             eval_record_count=len(eval_records) if eval_records else 0,
+            train_subset_metadata=train_subset_metadata,
+            eval_subset_metadata=eval_subset_metadata,
         )
         print("Dry run complete. The trainer stack was not imported.")
         print(f"Summary artifact: {summary_path}")
@@ -137,6 +166,8 @@ def main(argv: list[str] | None = None) -> int:
         context=context,
         train_record_count=len(train_records),
         eval_record_count=len(eval_records),
+        train_subset_metadata=train_subset_metadata,
+        eval_subset_metadata=eval_subset_metadata,
         train_metrics=dict(getattr(train_result, "metrics", {}) or {}),
     )
 

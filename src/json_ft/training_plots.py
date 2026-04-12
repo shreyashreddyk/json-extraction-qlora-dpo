@@ -48,6 +48,8 @@ class PlotSpec:
 def build_training_history_payload(
     log_history: Iterable[dict[str, Any]],
     tracked_scalar_keys: Iterable[str] | None = None,
+    derived_scalar_series: dict[str, list[dict[str, float]]] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Convert trainer log history into a compact JSON-friendly structure."""
 
@@ -95,13 +97,18 @@ def build_training_history_payload(
         if step is not None and lr is not None:
             learning_rate.append({"step": step, "epoch": epoch or 0.0, "learning_rate": lr})
 
-    return {
+    payload = {
         "train_loss": train_loss,
         "eval_loss": eval_loss,
         "learning_rate": learning_rate,
         "scalar_series": scalar_series,
         "raw_log_history": entries,
     }
+    for metric_key, series in (derived_scalar_series or {}).items():
+        payload["scalar_series"][metric_key] = list(series)
+    if metadata:
+        payload["metadata"] = metadata
+    return payload
 
 
 def _render_curve(
@@ -163,6 +170,8 @@ def write_training_history_and_plots(
     eval_loss_curve_path: str | Path | None = None,
     tracked_scalar_keys: Iterable[str] | None = None,
     extra_plot_specs: Iterable[PlotSpec] | None = None,
+    derived_scalar_series: dict[str, list[dict[str, float]]] | None = None,
+    metadata: dict[str, Any] | None = None,
     loss_curve_title: str = "SFT Training Loss",
     eval_loss_curve_title: str = "SFT Evaluation Loss",
 ) -> dict[str, Any]:
@@ -171,6 +180,8 @@ def write_training_history_and_plots(
     payload = build_training_history_payload(
         log_history,
         tracked_scalar_keys=tracked_scalar_keys,
+        derived_scalar_series=derived_scalar_series,
+        metadata=metadata,
     )
     history_output = write_json(history_path, payload)
 

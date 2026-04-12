@@ -1,119 +1,187 @@
 {
+  "adapter_path": null,
   "backend": "local-transformers",
+  "base_model": null,
   "categorical_exact_match": {
-    "customer.plan_tier": 0.6666666666666666,
-    "issue_category": 0.6666666666666666,
-    "priority": 0.6666666666666666,
-    "product_area": 0.6666666666666666,
-    "requires_human_followup": 0.6666666666666666,
-    "sentiment": 1.0
+    "customer.plan_tier": 0.25694779116465866,
+    "issue_category": 0.30216867469879516,
+    "priority": 0.16947791164658635,
+    "product_area": 0.22377510040160642,
+    "requires_human_followup": 0.9579116465863454,
+    "sentiment": 0.2991164658634538
   },
   "config_path": "/content/drive/MyDrive/json-ft-source/configs/eval.yaml",
   "counts": {
-    "hallucinated_prediction_count": 0,
+    "hallucinated_prediction_count": 41,
     "json_recovery_count": 0,
-    "json_valid_count": 3,
-    "parse_failure_count": 0,
-    "schema_failure_count": 0,
-    "schema_validation_pass_count": 3
+    "json_valid_count": 12448,
+    "parse_failure_count": 2,
+    "schema_failure_count": 155,
+    "schema_validation_pass_count": 12295
+  },
+  "data_pipeline": {
+    "build_summary": {
+      "leakage_checks": {
+        "eval_root_count": 12450,
+        "is_lineage_clean": true,
+        "leaked_train_row_count": 0,
+        "leaked_train_rows": []
+      },
+      "nullable_field_null_rates": {
+        "customer.account_id": 1.0,
+        "customer.name": 0.9714,
+        "customer.plan_tier": 0.3018
+      },
+      "profile": "full",
+      "schema": {
+        "name": "support_ticket_extraction",
+        "version": "1.0.0"
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "split_counts": {
+        "eval": 12450,
+        "train": 71161
+      },
+      "synthetic_row_rate": 0.2553,
+      "total_rows": 83611
+    },
+    "build_summary_path": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_dataset_build_summary.json",
+    "composition_summary_path": "/content/drive/MyDrive/json-ft-source/artifacts/metrics/support_tickets_dataset_composition.json",
+    "source_composition_snapshot": {
+      "issue_category_counts": {
+        "account_access": 9091,
+        "billing": 7115,
+        "feature_request": 13427,
+        "general_question": 1062,
+        "integration": 4783,
+        "other": 26192,
+        "technical_bug": 21941
+      },
+      "priority_counts": {
+        "high": 28657,
+        "low": 18349,
+        "medium": 30292,
+        "urgent": 6313
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "synthetic_row_rate": 0.2553
+    }
   },
   "dataset_path": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_eval_manifest.jsonl",
   "field_level": {
     "macro": {
-      "f1": 0.6296296296296295,
-      "precision": 0.6296296296296295,
-      "recall": 0.6296296296296295
+      "f1": 0.300818450388697,
+      "precision": 0.3008426163953156,
+      "recall": 0.30079428826416776
     },
     "micro": {
-      "f1": 0.5964912280701754,
-      "fn": 12,
-      "fp": 11,
-      "precision": 0.6071428571428571,
-      "recall": 0.5862068965517241,
-      "support": 29,
-      "tp": 17
+      "f1": 0.3029709200413502,
+      "fn": 65896,
+      "fp": 89186,
+      "precision": 0.2742615347058345,
+      "recall": 0.33839357429718875,
+      "support": 99600,
+      "tp": 33704
     },
     "per_field": {
       "actions_requested": {
         "f1": 0.0,
-        "fn": 5,
-        "fp": 4,
+        "fn": 0,
+        "fp": 23306,
         "precision": 0.0,
         "recall": 0.0,
-        "support": 5,
+        "support": 0,
         "tp": 0
       },
       "customer.account_id": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.494818860952687,
+        "fn": 6290,
+        "fp": 6288,
+        "precision": 0.4948586118251928,
+        "recall": 0.4947791164658635,
+        "support": 12450,
+        "tp": 6160
       },
       "customer.name": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.0029721262752028274,
+        "fn": 12413,
+        "fp": 12411,
+        "precision": 0.002972365038560411,
+        "recall": 0.002971887550200803,
+        "support": 12450,
+        "tp": 37
       },
       "customer.plan_tier": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.25696843119929313,
+        "fn": 9251,
+        "fp": 9249,
+        "precision": 0.25698907455012854,
+        "recall": 0.25694779116465866,
+        "support": 12450,
+        "tp": 3199
       },
       "issue_category": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.30219294722467666,
+        "fn": 8688,
+        "fp": 8686,
+        "precision": 0.3022172236503856,
+        "recall": 0.30216867469879516,
+        "support": 12450,
+        "tp": 3762
       },
       "priority": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.1694915254237288,
+        "fn": 10340,
+        "fp": 10338,
+        "precision": 0.1695051413881748,
+        "recall": 0.16947791164658635,
+        "support": 12450,
+        "tp": 2110
       },
       "product_area": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.22379307574905616,
+        "fn": 9664,
+        "fp": 9662,
+        "precision": 0.22381105398457585,
+        "recall": 0.22377510040160642,
+        "support": 12450,
+        "tp": 2786
       },
       "requires_human_followup": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.9579885934613223,
+        "fn": 524,
+        "fp": 522,
+        "precision": 0.9580655526992288,
+        "recall": 0.9579116465863454,
+        "support": 12450,
+        "tp": 11926
       },
       "sentiment": {
-        "f1": 1.0,
-        "fn": 0,
-        "fp": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "support": 3,
-        "tp": 3
+        "f1": 0.2991404932123062,
+        "fn": 8726,
+        "fp": 8724,
+        "precision": 0.2991645244215938,
+        "recall": 0.2991164658634538,
+        "support": 12450,
+        "tp": 3724
       }
     }
   },
@@ -123,26 +191,30 @@
     "temperature": 0.0,
     "top_p": 1.0
   },
-  "hallucinated_field_rate": 0.0,
+  "hallucinated_field_rate": 0.0032931726907630523,
   "json_recovery_rate": 0.0,
-  "json_validity_rate": 1.0,
+  "json_validity_rate": 0.9998393574297189,
   "latency_ms": {
-    "max": 5151.339373999917,
-    "mean": 4033.6954459999106,
-    "min": 3384.0871509999033,
-    "p50": 3565.659812999911,
-    "p95": 5151.339373999917
+    "max": 16488.856496999688,
+    "mean": 10760.629579136568,
+    "min": 6421.831356999974,
+    "p50": 10623.117657999956,
+    "p95": 13152.760416000092
   },
+  "merged_model_path": null,
+  "model_manifest_path": null,
   "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct",
-  "parsed_prediction_count": 3,
+  "parsed_prediction_count": 12448,
+  "prior_stage_predictions_path": null,
   "prompt_source": "messages",
-  "record_count": 3,
+  "qualitative_summary": "Use the example buckets and per-field diagnostics for qualitative review. The free-text summary field remains qualitative and is not scored as an aggregate metric.",
+  "record_count": 12450,
   "run_name": "baseline-qwen2.5-1.5b",
   "sample_limit": null,
   "schema": {
     "name": "support_ticket_extraction",
     "version": "1.0.0"
   },
-  "schema_validation_pass_rate": 1.0,
-  "stage": "baseline_eval"
+  "schema_validation_pass_rate": 0.9875502008032129,
+  "stage": "baseline"
 }

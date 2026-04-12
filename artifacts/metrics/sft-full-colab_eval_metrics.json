@@ -1,0 +1,220 @@
+{
+  "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-full-colab/adapter",
+  "backend": "local-transformers",
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "categorical_exact_match": {
+    "customer.plan_tier": 0.5636144578313254,
+    "issue_category": 0.44546184738955824,
+    "priority": 0.45244979919678713,
+    "product_area": 0.6085943775100402,
+    "requires_human_followup": 0.980722891566265,
+    "sentiment": 0.8393574297188755
+  },
+  "config_path": "/content/drive/MyDrive/json-ft-source/configs/eval.yaml",
+  "counts": {
+    "hallucinated_prediction_count": 0,
+    "json_recovery_count": 0,
+    "json_valid_count": 12437,
+    "parse_failure_count": 13,
+    "schema_failure_count": 1878,
+    "schema_validation_pass_count": 10572
+  },
+  "data_pipeline": {
+    "build_summary": {
+      "leakage_checks": {
+        "eval_root_count": 12450,
+        "is_lineage_clean": true,
+        "leaked_train_row_count": 0,
+        "leaked_train_rows": []
+      },
+      "nullable_field_null_rates": {
+        "customer.account_id": 1.0,
+        "customer.name": 0.9714,
+        "customer.plan_tier": 0.3018
+      },
+      "profile": "full",
+      "schema": {
+        "name": "support_ticket_extraction",
+        "version": "1.0.0"
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "split_counts": {
+        "eval": 12450,
+        "train": 71161
+      },
+      "synthetic_row_rate": 0.2553,
+      "total_rows": 83611
+    },
+    "build_summary_path": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_dataset_build_summary.json",
+    "composition_summary_path": "/content/drive/MyDrive/json-ft-source/artifacts/metrics/support_tickets_dataset_composition.json",
+    "source_composition_snapshot": {
+      "issue_category_counts": {
+        "account_access": 9091,
+        "billing": 7115,
+        "feature_request": 13427,
+        "general_question": 1062,
+        "integration": 4783,
+        "other": 26192,
+        "technical_bug": 21941
+      },
+      "priority_counts": {
+        "high": 28657,
+        "low": 18349,
+        "medium": 30292,
+        "urgent": 6313
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "synthetic_row_rate": 0.2553
+    }
+  },
+  "dataset_path": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_eval_manifest.jsonl",
+  "field_level": {
+    "macro": {
+      "f1": 0.651933405660251,
+      "precision": 0.6522741282731634,
+      "recall": 0.6515930388219545
+    },
+    "micro": {
+      "f1": 0.7334250813677824,
+      "fn": 26589,
+      "fp": 26485,
+      "precision": 0.7338083943073088,
+      "recall": 0.7330421686746988,
+      "support": 99600,
+      "tp": 73011
+    },
+    "per_field": {
+      "actions_requested": {
+        "f1": 0.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 0,
+        "tp": 0
+      },
+      "customer.account_id": {
+        "f1": 0.9994776389279543,
+        "fn": 13,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 0.9989558232931727,
+        "support": 12450,
+        "tp": 12437
+      },
+      "customer.name": {
+        "f1": 0.9756901193394142,
+        "fn": 309,
+        "fp": 296,
+        "precision": 0.9762000482431454,
+        "recall": 0.9751807228915662,
+        "support": 12450,
+        "tp": 12141
+      },
+      "customer.plan_tier": {
+        "f1": 0.5639088680837386,
+        "fn": 5433,
+        "fp": 5420,
+        "precision": 0.564203586073812,
+        "recall": 0.5636144578313254,
+        "support": 12450,
+        "tp": 7017
+      },
+      "issue_category": {
+        "f1": 0.44569453931771613,
+        "fn": 6904,
+        "fp": 6891,
+        "precision": 0.4459274744713355,
+        "recall": 0.44546184738955824,
+        "support": 12450,
+        "tp": 5546
+      },
+      "priority": {
+        "f1": 0.4526861413589424,
+        "fn": 6817,
+        "fp": 6804,
+        "precision": 0.45292273056203264,
+        "recall": 0.45244979919678713,
+        "support": 12450,
+        "tp": 5633
+      },
+      "product_area": {
+        "f1": 0.6089122835215173,
+        "fn": 4873,
+        "fp": 4860,
+        "precision": 0.6092305218300234,
+        "recall": 0.6085943775100402,
+        "support": 12450,
+        "tp": 7577
+      },
+      "requires_human_followup": {
+        "f1": 0.9812351830272833,
+        "fn": 240,
+        "fp": 227,
+        "precision": 0.98174800997025,
+        "recall": 0.980722891566265,
+        "support": 12450,
+        "tp": 12210
+      },
+      "sentiment": {
+        "f1": 0.8397958773656928,
+        "fn": 2000,
+        "fp": 1987,
+        "precision": 0.8402347833078717,
+        "recall": 0.8393574297188755,
+        "support": 12450,
+        "tp": 10450
+      }
+    }
+  },
+  "generation": {
+    "do_sample": false,
+    "max_new_tokens": 256,
+    "temperature": 0.0,
+    "top_p": 1.0
+  },
+  "hallucinated_field_rate": 0.0,
+  "json_recovery_rate": 0.0,
+  "json_validity_rate": 0.9989558232931727,
+  "latency_ms": {
+    "max": 20255.366602999857,
+    "mean": 10773.134664594376,
+    "min": 9111.356091999369,
+    "p50": 10653.199884999594,
+    "p95": 12375.896821999959
+  },
+  "merged_model_path": null,
+  "model_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-full-colab_adapter_manifest.json",
+  "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct",
+  "parsed_prediction_count": 12437,
+  "prior_stage_predictions_path": "/content/drive/MyDrive/json-ft-source/artifacts/reports/baseline-qwen2.5-1.5b_predictions.jsonl",
+  "prompt_source": "messages",
+  "qualitative_summary": "Use the example buckets and per-field diagnostics for qualitative review. The free-text summary field remains qualitative and is not scored as an aggregate metric.",
+  "record_count": 12450,
+  "run_name": "sft-full-colab_eval",
+  "sample_limit": null,
+  "schema": {
+    "name": "support_ticket_extraction",
+    "version": "1.0.0"
+  },
+  "schema_validation_pass_rate": 0.8491566265060241,
+  "stage": "sft"
+}

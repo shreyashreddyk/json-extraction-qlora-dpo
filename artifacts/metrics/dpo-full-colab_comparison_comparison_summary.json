@@ -1,202 +1,58 @@
 {
+  "classification_basis": "DPO relative to SFT",
   "deltas": {
     "dpo_vs_baseline": {
       "semantic": {
-        "field_level_macro_f1": 0.03703703703703709,
-        "field_level_micro_f1": 0.024198427102238407
+        "field_level_macro_f1": 0.3863019497542112,
+        "field_level_micro_f1": 0.47003953011942146
       },
       "syntax": {
-        "hallucinated_field_rate": 0.0,
+        "hallucinated_field_rate": -0.0032931726907630523,
         "json_recovery_rate": 0.0,
-        "json_validity_rate": 0.0,
-        "schema_validation_pass_rate": 0.0
+        "json_validity_rate": -0.0014457831325300763,
+        "schema_validation_pass_rate": 0.010602409638554189
       }
     },
     "dpo_vs_sft": {
       "semantic": {
-        "field_level_macro_f1": 0.0,
-        "field_level_micro_f1": 0.0
+        "field_level_macro_f1": 0.03518699448265716,
+        "field_level_micro_f1": 0.03958536879298924
       },
       "syntax": {
         "hallucinated_field_rate": 0.0,
         "json_recovery_rate": 0.0,
-        "json_validity_rate": 0.0,
-        "schema_validation_pass_rate": 0.0
+        "json_validity_rate": -0.0005622489959838939,
+        "schema_validation_pass_rate": 0.14899598393574298
       }
     },
     "sft_vs_baseline": {
       "semantic": {
-        "field_level_macro_f1": 0.03703703703703709,
-        "field_level_micro_f1": 0.024198427102238407
+        "field_level_macro_f1": 0.35111495527155406,
+        "field_level_micro_f1": 0.4304541613264322
       },
       "syntax": {
-        "hallucinated_field_rate": 0.0,
+        "hallucinated_field_rate": -0.0032931726907630523,
         "json_recovery_rate": 0.0,
-        "json_validity_rate": 0.0,
-        "schema_validation_pass_rate": 0.0
+        "json_validity_rate": -0.0008835341365461824,
+        "schema_validation_pass_rate": -0.1383935742971888
       }
     }
   },
   "row_evidence": {
-    "dpo_hurts": [
-      {
-        "baseline": {
-          "parsed_payload": {
-            "actions_requested": [
-              "Provide documentation on regional data residency support in the starter tier."
-            ],
-            "customer": {
-              "account_id": "Account ID",
-              "name": "Customer Name",
-              "plan_tier": "free"
-            },
-            "issue_category": "general_question",
-            "priority": "medium",
-            "product_area": "billing_portal",
-            "requires_human_followup": true,
-            "sentiment": "neutral",
-            "summary": "Regional Data Residency Support Question"
-          },
-          "raw_output": "{\n  \"summary\": \"Regional Data Residency Support Question\",\n  \"issue_category\": \"general_question\",\n  \"priority\": \"medium\",\n  \"product_area\": \"billing_portal\",\n  \"customer\": {\n    \"name\": \"Customer Name\",\n    \"account_id\": \"Account ID\",\n    \"plan_tier\": \"free\"\n  },\n  \"sentiment\": \"neutral\",\n  \"requires_human_followup\": true,\n  \"actions_requested\": [\n    \"Provide documentation on regional data residency support in the starter tier.\"\n  ]\n}",
-          "semantic": {
-            "actions_f1": 0.0,
-            "nullable_hallucination_count": 3,
-            "semantic_score": -0.1111111111111111,
-            "structured_match_count": 2,
-            "structured_matches": {
-              "customer.account_id": false,
-              "customer.name": false,
-              "customer.plan_tier": false,
-              "issue_category": true,
-              "priority": false,
-              "product_area": false,
-              "requires_human_followup": false,
-              "sentiment": true
-            },
-            "structured_total": 8
-          },
-          "syntax_tuple": [
-            1,
-            1,
-            1
-          ]
-        },
-        "dpo": {
-          "parsed_payload": {
-            "actions_requested": [
-              "Provide information about regional data residency support in the starter tier.",
-              "If no documentation exists, provide a link to a relevant document."
-            ],
-            "customer": {
-              "account_id": "Not provided",
-              "name": "Not provided",
-              "plan_tier": "free"
-            },
-            "issue_category": "general_question",
-            "priority": "medium",
-            "product_area": "web_app",
-            "requires_human_followup": true,
-            "sentiment": "neutral",
-            "summary": "Customer inquiry about regional data residency support in the starter tier"
-          },
-          "raw_output": "{\n  \"summary\": \"Customer inquiry about regional data residency support in the starter tier\",\n  \"issue_category\": \"general_question\",\n  \"priority\": \"medium\",\n  \"product_area\": \"web_app\",\n  \"customer\": {\n    \"name\": \"Not provided\",\n    \"account_id\": \"Not provided\",\n    \"plan_tier\": \"free\"\n  },\n  \"sentiment\": \"neutral\",\n  \"requires_human_followup\": true,\n  \"actions_requested\": [\n    \"Provide information about regional data residency support in the starter tier.\",\n    \"If no documentation exists, provide a link to a relevant document.\"\n  ]\n}",
-          "semantic": {
-            "actions_f1": 0.0,
-            "nullable_hallucination_count": 3,
-            "semantic_score": -0.1111111111111111,
-            "structured_match_count": 2,
-            "structured_matches": {
-              "customer.account_id": false,
-              "customer.name": false,
-              "customer.plan_tier": false,
-              "issue_category": true,
-              "priority": false,
-              "product_area": false,
-              "requires_human_followup": false,
-              "sentiment": true
-            },
-            "structured_total": 8
-          },
-          "syntax_tuple": [
-            1,
-            1,
-            1
-          ]
-        },
-        "reason": "DPO changed the output without improving syntax or semantic score relative to SFT. Treat this as a regression-risk example because behavior moved with no measured gain.",
-        "record_id": "support-eval-003",
-        "reference_payload": {
-          "actions_requested": [
-            "Provide documentation about regional data residency availability"
-          ],
-          "customer": {
-            "account_id": null,
-            "name": null,
-            "plan_tier": null
-          },
-          "issue_category": "general_question",
-          "priority": "low",
-          "product_area": "unknown",
-          "requires_human_followup": false,
-          "sentiment": "neutral",
-          "summary": "Prospective customer asks whether regional data residency is available on starter plans and would accept documentation."
-        },
-        "sft": {
-          "parsed_payload": {
-            "actions_requested": [
-              "Provide information about regional data residency support in the starter tier.",
-              "If no documentation exists, provide a link to a relevant document."
-            ],
-            "customer": {
-              "account_id": "Not provided",
-              "name": "Not provided",
-              "plan_tier": "free"
-            },
-            "issue_category": "general_question",
-            "priority": "medium",
-            "product_area": "billing_portal",
-            "requires_human_followup": true,
-            "sentiment": "neutral",
-            "summary": "Customer inquiry about regional data residency support in the starter tier"
-          },
-          "raw_output": "{\n  \"summary\": \"Customer inquiry about regional data residency support in the starter tier\",\n  \"issue_category\": \"general_question\",\n  \"priority\": \"medium\",\n  \"product_area\": \"billing_portal\",\n  \"customer\": {\n    \"name\": \"Not provided\",\n    \"account_id\": \"Not provided\",\n    \"plan_tier\": \"free\"\n  },\n  \"sentiment\": \"neutral\",\n  \"requires_human_followup\": true,\n  \"actions_requested\": [\n    \"Provide information about regional data residency support in the starter tier.\",\n    \"If no documentation exists, provide a link to a relevant document.\"\n  ]\n}",
-          "semantic": {
-            "actions_f1": 0.0,
-            "nullable_hallucination_count": 3,
-            "semantic_score": -0.1111111111111111,
-            "structured_match_count": 2,
-            "structured_matches": {
-              "customer.account_id": false,
-              "customer.name": false,
-              "customer.plan_tier": false,
-              "issue_category": true,
-              "priority": false,
-              "product_area": false,
-              "requires_human_followup": false,
-              "sentiment": true
-            },
-            "structured_total": 8
-          },
-          "syntax_tuple": [
-            1,
-            1,
-            1
-          ]
-        }
-      }
-    ],
-    "dpo_semantic_help": [],
-    "dpo_syntax_only_help": []
+    "mixed_result": [],
+    "semantic_gain": [],
+    "semantic_regression": [],
+    "syntax_gain_only": []
   },
   "run_name": "dpo-full-colab_comparison",
   "stages": {
     "baseline": {
       "latency_ms": {
-        "max": 5151.339373999917,
-        "mean": 4033.6954459999106,
-        "min": 3384.0871509999033,
-        "p50": 3565.659812999911,
-        "p95": 5151.339373999917
+        "max": 16488.856496999688,
+        "mean": 10760.629579136568,
+        "min": 6421.831356999974,
+        "p50": 10623.117657999956,
+        "p95": 13152.760416000092
       },
       "metrics_path": "/content/drive/MyDrive/json-ft-source/artifacts/metrics/baseline-qwen2.5-1.5b_metrics.json",
       "model": {
@@ -210,31 +66,31 @@
       "run_name": "baseline-qwen2.5-1.5b",
       "semantic": {
         "categorical_exact_match": {
-          "customer.plan_tier": 0.6666666666666666,
-          "issue_category": 0.6666666666666666,
-          "priority": 0.6666666666666666,
-          "product_area": 0.6666666666666666,
-          "requires_human_followup": 0.6666666666666666,
-          "sentiment": 1.0
+          "customer.plan_tier": 0.25694779116465866,
+          "issue_category": 0.30216867469879516,
+          "priority": 0.16947791164658635,
+          "product_area": 0.22377510040160642,
+          "requires_human_followup": 0.9579116465863454,
+          "sentiment": 0.2991164658634538
         },
-        "field_level_macro_f1": 0.6296296296296295,
-        "field_level_micro_f1": 0.5964912280701754
+        "field_level_macro_f1": 0.300818450388697,
+        "field_level_micro_f1": 0.3029709200413502
       },
-      "stage_label": "baseline_eval",
+      "stage_label": "baseline",
       "syntax": {
-        "hallucinated_field_rate": 0.0,
+        "hallucinated_field_rate": 0.0032931726907630523,
         "json_recovery_rate": 0.0,
-        "json_validity_rate": 1.0,
-        "schema_validation_pass_rate": 1.0
+        "json_validity_rate": 0.9998393574297189,
+        "schema_validation_pass_rate": 0.9875502008032129
       }
     },
     "dpo": {
       "latency_ms": {
-        "max": 10507.727596999757,
-        "mean": 10266.593081333363,
-        "min": 9900.079903000005,
-        "p50": 10391.97174400033,
-        "p95": 10507.727596999757
+        "max": 22259.177828999895,
+        "mean": 16000.417762348436,
+        "min": 13432.938560000024,
+        "p50": 15644.069403999993,
+        "p95": 20388.679134999962
       },
       "metrics_path": "/content/drive/MyDrive/json-ft-runs/persistent/metrics/dpo-full-colab_eval_metrics.json",
       "model": {
@@ -248,60 +104,60 @@
       "run_name": "dpo-full-colab_eval",
       "semantic": {
         "categorical_exact_match": {
-          "customer.plan_tier": 0.6666666666666666,
-          "issue_category": 1.0,
-          "priority": 0.6666666666666666,
-          "product_area": 0.6666666666666666,
-          "requires_human_followup": 0.6666666666666666,
-          "sentiment": 1.0
+          "customer.plan_tier": 0.7514859437751004,
+          "issue_category": 0.5030522088353414,
+          "priority": 0.46008032128514054,
+          "product_area": 0.6323694779116465,
+          "requires_human_followup": 0.9801606425702811,
+          "sentiment": 0.861285140562249
         },
-        "field_level_macro_f1": 0.6666666666666666,
-        "field_level_micro_f1": 0.6206896551724138
+        "field_level_macro_f1": 0.6871204001429082,
+        "field_level_micro_f1": 0.7730104501607716
       },
       "stage_label": "dpo",
       "syntax": {
         "hallucinated_field_rate": 0.0,
         "json_recovery_rate": 0.0,
-        "json_validity_rate": 1.0,
-        "schema_validation_pass_rate": 1.0
+        "json_validity_rate": 0.9983935742971888,
+        "schema_validation_pass_rate": 0.9981526104417671
       }
     },
     "sft": {
       "latency_ms": {
-        "max": 10627.75448299908,
-        "mean": 10344.345547999788,
-        "min": 9966.283739000573,
-        "p50": 10438.998421999713,
-        "p95": 10627.75448299908
+        "max": 20255.366602999857,
+        "mean": 10773.134664594376,
+        "min": 9111.356091999369,
+        "p50": 10653.199884999594,
+        "p95": 12375.896821999959
       },
-      "metrics_path": "/content/drive/MyDrive/json-ft-runs/persistent/metrics/sft-qwen2.5-1.5b-qlora-v1_eval_metrics.json",
+      "metrics_path": "/content/drive/MyDrive/json-ft-runs/persistent/metrics/sft-full-colab_eval_metrics.json",
       "model": {
-        "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-qwen2.5-1.5b-qlora-v1/adapter",
+        "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-full-colab/adapter",
         "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
         "merged_model_path": null,
-        "model_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-qwen2.5-1.5b-qlora-v1_adapter_manifest.json",
+        "model_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-full-colab_adapter_manifest.json",
         "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct"
       },
-      "predictions_path": "/content/drive/MyDrive/json-ft-runs/persistent/reports/sft-qwen2.5-1.5b-qlora-v1_eval_predictions.jsonl",
-      "run_name": "sft-qwen2.5-1.5b-qlora-v1_eval",
+      "predictions_path": "/content/drive/MyDrive/json-ft-runs/persistent/reports/sft-full-colab_eval_predictions.jsonl",
+      "run_name": "sft-full-colab_eval",
       "semantic": {
         "categorical_exact_match": {
-          "customer.plan_tier": 0.6666666666666666,
-          "issue_category": 1.0,
-          "priority": 0.6666666666666666,
-          "product_area": 0.6666666666666666,
-          "requires_human_followup": 0.6666666666666666,
-          "sentiment": 1.0
+          "customer.plan_tier": 0.5636144578313254,
+          "issue_category": 0.44546184738955824,
+          "priority": 0.45244979919678713,
+          "product_area": 0.6085943775100402,
+          "requires_human_followup": 0.980722891566265,
+          "sentiment": 0.8393574297188755
         },
-        "field_level_macro_f1": 0.6666666666666666,
-        "field_level_micro_f1": 0.6206896551724138
+        "field_level_macro_f1": 0.651933405660251,
+        "field_level_micro_f1": 0.7334250813677824
       },
       "stage_label": "sft",
       "syntax": {
         "hallucinated_field_rate": 0.0,
         "json_recovery_rate": 0.0,
-        "json_validity_rate": 1.0,
-        "schema_validation_pass_rate": 1.0
+        "json_validity_rate": 0.9989558232931727,
+        "schema_validation_pass_rate": 0.8491566265060241
       }
     }
   }

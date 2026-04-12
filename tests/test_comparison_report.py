@@ -190,11 +190,12 @@ class ComparisonReportTest(unittest.TestCase):
             report = read_text(runtime_root / "persistent" / "reports" / "comparison-smoke_comparison_report.md")
 
             self.assertIn("dpo_vs_sft", summary["deltas"])
-            self.assertEqual(len(summary["row_evidence"]["dpo_semantic_help"]), 1)
-            self.assertEqual(len(summary["row_evidence"]["dpo_hurts"]), 1)
+            self.assertEqual(summary["classification_basis"], "DPO relative to SFT")
+            self.assertEqual(len(summary["row_evidence"]["semantic_gain"]), 1)
+            self.assertEqual(len(summary["row_evidence"]["semantic_regression"]), 1)
             self.assertIn("# Consolidated Comparison Report: comparison-smoke", report)
-            self.assertIn("Where DPO Helped Semantically", report)
-            self.assertIn("Where DPO Hurt", report)
+            self.assertIn("Semantic Gain", report)
+            self.assertIn("Semantic Regression", report)
             mirrored_summary = REPO_ROOT / "artifacts" / "metrics" / "comparison-smoke_comparison_summary.json"
             mirrored_report = REPO_ROOT / "artifacts" / "reports" / "comparison-smoke_comparison_report.md"
             self.assertTrue(mirrored_summary.exists())

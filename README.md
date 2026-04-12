@@ -14,9 +14,9 @@ natural language inputs and comparing three stages honestly:
 3. Preference tuning with DPO on the same schema contract
 
 This repository now includes a Colab-native execution layer for notebook-driven
-GPU work. The final runtime model treats Colab as disposable compute, Google
-Drive as the durable transport and runtime storage layer, and the local Git
-repo as the source of truth for code, configs, docs, and tracked artifacts.
+GPU work. The runtime model treats Colab as disposable compute, Google Drive as
+the durable transport and runtime storage layer, and the local Git repo as the
+source of truth for code, configs, docs, and tracked artifacts.
 
 ## Intended Workflow
 
@@ -102,7 +102,14 @@ Initialize those folders locally:
 make drive-init
 ```
 
-Preview and push the execution subset into Drive:
+For a clean-slate rewrite of both Drive folders:
+
+```bash
+make drive-rewrite-colab
+```
+
+Or preview and push the execution subset into Drive without resetting runtime
+data:
 
 ```bash
 make drive-push-source-dry-run
@@ -112,12 +119,14 @@ make drive-push-source
 Then from a Colab notebook connected to the runtime:
 
 1. Run [`notebooks/00_colab_setup.ipynb`](notebooks/00_colab_setup.ipynb).
-2. Execute the phase notebook you need for baseline eval, SFT, DPO, or vLLM benchmarking.
+2. Build the task manifests in Colab with `scripts/build_dataset_manifests.py --profile full`.
+3. Run the phase notebook you need for baseline eval, SFT, preference generation, DPO, or vLLM benchmarking.
 
 The setup notebook will:
 
 - mount Google Drive
 - verify the mirrored Drive source tree
+- recreate any missing runtime or artifact mirror directories
 - install pinned `requirements-colab.txt` from `json-ft-source`
 - resolve `SOURCE_ROOT=/content/drive/MyDrive/json-ft-source`
 - resolve `RUNTIME_ROOT=/content/drive/MyDrive/json-ft-runs`
@@ -161,9 +170,9 @@ The recommended operating model is:
 
 1. edit code locally in VS Code
 2. validate locally with fast non-GPU checks
-3. build the dataset manifests locally with `scripts/build_dataset_manifests.py`
-4. mirror the execution subset into `json-ft-source` with `make drive-push-source`
-5. run Colab notebooks directly from the Drive-backed source tree
+3. mirror the execution subset into `json-ft-source` with `make drive-push-source`
+4. run Colab notebooks directly from the Drive-backed source tree
+5. build `data_build:full` in Colab for the real training corpus
 6. persist runtime outputs in `json-ft-runs`
 7. pull mirrored small artifacts back into the repo with `make drive-pull-artifacts`
 
@@ -204,6 +213,7 @@ Local machine:
 
 ```bash
 make drive-init
+make drive-rewrite-colab
 make drive-push-source-dry-run
 make drive-push-source
 make drive-pull-artifacts
@@ -248,29 +258,35 @@ Dataset build:
 
 ```bash
 python /content/drive/MyDrive/json-ft-source/scripts/build_dataset_manifests.py \
-  --profile full
+  --registry-config /content/drive/MyDrive/json-ft-source/configs/data_sources.yaml \
+  --build-config /content/drive/MyDrive/json-ft-source/configs/data_build.yaml \
+  --profile full \
+  --raw-root /content/drive/MyDrive/json-ft-runs/raw-data
 ```
 
 ## Exact Staged Workflow
 
 The intended production-style sequence is now:
 
-1. Build the dataset manifests locally, review the composition artifacts, and
-   sync the source tree with `make drive-push-source`.
-2. Run `notebooks/00_colab_setup.ipynb`.
-3. Run `notebooks/01_baseline_eval.ipynb` to produce the baseline metrics,
+1. Rewrite or initialize the Drive folders with `make drive-rewrite-colab` or
+   `make drive-init`.
+2. Sync the latest source tree with `make drive-push-source`.
+3. Run `notebooks/00_colab_setup.ipynb`.
+4. Build the task manifests with
+   `scripts/build_dataset_manifests.py --profile full --raw-root /content/drive/MyDrive/json-ft-runs/raw-data`.
+5. Run `notebooks/01_baseline_eval.ipynb` to produce the baseline metrics,
    report, and prediction artifact under `json-ft-source/artifacts/`.
-4. Run `notebooks/02_sft_review.ipynb` to train the SFT adapter and mirror the
+6. Run `notebooks/02_sft_review.ipynb` to train the SFT adapter and mirror the
    SFT summary, checkpoint manifest, and plots back into
    `json-ft-source/artifacts/`.
-5. Run `notebooks/03_preference_pair_audit.ipynb` to build and review the DPO
+7. Run `notebooks/03_preference_pair_audit.ipynb` to build and review the DPO
    pair dataset under `json-ft-runs/persistent/preferences/<run_name>/`.
-6. Run `notebooks/04_dpo_review.ipynb` to:
+8. Run `notebooks/04_dpo_review.ipynb` to:
    - train the DPO adapter
    - inspect DPO loss and reward traces
    - evaluate SFT and DPO on the held-out manifest
    - build a consolidated baseline vs SFT vs DPO comparison report
-7. Pull the mirrored small artifacts back into the local repo with
+9. Pull the mirrored small artifacts back into the local repo with
    `make drive-pull-artifacts`.
 
 ### DPO training command

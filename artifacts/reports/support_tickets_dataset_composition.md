@@ -1,27 +1,26 @@
 # Support Tickets Dataset Composition
 
 - Profile: `full`
-- Total rows: `16`
-- Split counts: `{'eval': 2, 'train': 14}`
-- Synthetic row rate: `0.25`
+- Total rows: `83611`
+- Split counts: `{'eval': 12450, 'train': 71161}`
+- Synthetic row rate: `0.2553`
 - Leakage clean: `True`
 
 ## Per-Source Split Counts
 
 | Source | Split | Rows | Synthetic Rows | Synthetic Rate |
 | --- | --- | ---: | ---: | ---: |
-| cfpb_consumer_complaints | eval | 1 | 0 | 0.00% |
-| cfpb_consumer_complaints | train | 3 | 0 | 0.00% |
-| console_ai_it_helpdesk_synthetic_tickets | eval | 1 | 0 | 0.00% |
-| console_ai_it_helpdesk_synthetic_tickets | train | 3 | 0 | 0.00% |
-| prady06_customer_support_tickets | train | 4 | 0 | 0.00% |
-| synthetic_hardening_v1 | train | 2 | 2 | 100.00% |
-| synthetic_support_tickets_v1 | train | 2 | 2 | 100.00% |
+| console_ai_it_helpdesk_synthetic_tickets | eval | 108 | 0 | 0.00% |
+| console_ai_it_helpdesk_synthetic_tickets | train | 392 | 0 | 0.00% |
+| prady06_customer_support_tickets | eval | 12342 | 0 | 0.00% |
+| prady06_customer_support_tickets | train | 49421 | 0 | 0.00% |
+| synthetic_hardening_v1 | train | 21341 | 21341 | 100.00% |
+| synthetic_support_tickets_v1 | train | 7 | 7 | 100.00% |
 
 ## Review Gates
 
-- Source dominance share: `{'cfpb_consumer_complaints': 0.25, 'console_ai_it_helpdesk_synthetic_tickets': 0.25, 'prady06_customer_support_tickets': 0.25, 'synthetic_hardening_v1': 0.125, 'synthetic_support_tickets_v1': 0.125}`
-- Nullable field null rates: `{'customer.account_id': 0.875, 'customer.name': 0.8125, 'customer.plan_tier': 0.875}`
-- Adapter reject counts: `{}`
-- Prompt length chars: `{'count': 14, 'min': 1138, 'max': 1379, 'avg': 1206.86}`
-- Summary length chars: `{'count': 16, 'min': 29, 'max': 97, 'avg': 52.06}`
+- Source dominance share: `{'console_ai_it_helpdesk_synthetic_tickets': 0.006, 'prady06_customer_support_tickets': 0.7387, 'synthetic_hardening_v1': 0.2552, 'synthetic_support_tickets_v1': 0.0001}`
+- Nullable field null rates: `{'customer.account_id': 1.0, 'customer.name': 0.9714, 'customer.plan_tier': 0.3018}`
+- Adapter reject counts: `{'missing_body': 2, 'missing_consumer_complaint_narrative': 14380839}`
+- Prompt length chars: `{'count': 71161, 'min': 968, 'max': 4740, 'avg': 1483.14}`
+- Summary length chars: `{'count': 83611, 'min': 3, 'max': 140, 'avg': 54.63}`

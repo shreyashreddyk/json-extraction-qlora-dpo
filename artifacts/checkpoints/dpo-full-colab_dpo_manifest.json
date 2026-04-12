@@ -3,8 +3,80 @@
   "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
   "checkpoint_root": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/dpo/dpo-full-colab",
   "config_path": "/content/drive/MyDrive/json-ft-source/configs/dpo.yaml",
+  "data_pipeline": {
+    "build_summary": {
+      "leakage_checks": {
+        "eval_root_count": 12450,
+        "is_lineage_clean": true,
+        "leaked_train_row_count": 0,
+        "leaked_train_rows": []
+      },
+      "nullable_field_null_rates": {
+        "customer.account_id": 1.0,
+        "customer.name": 0.9714,
+        "customer.plan_tier": 0.3018
+      },
+      "profile": "full",
+      "schema": {
+        "name": "support_ticket_extraction",
+        "version": "1.0.0"
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "split_counts": {
+        "eval": 12450,
+        "train": 71161
+      },
+      "synthetic_row_rate": 0.2553,
+      "total_rows": 83611
+    },
+    "build_summary_path": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_dataset_build_summary.json",
+    "composition_summary_path": "/content/drive/MyDrive/json-ft-source/artifacts/metrics/support_tickets_dataset_composition.json",
+    "source_composition_snapshot": {
+      "issue_category_counts": {
+        "account_access": 9091,
+        "billing": 7115,
+        "feature_request": 13427,
+        "general_question": 1062,
+        "integration": 4783,
+        "other": 26192,
+        "technical_bug": 21941
+      },
+      "priority_counts": {
+        "high": 28657,
+        "low": 18349,
+        "medium": 30292,
+        "urgent": 6313
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "synthetic_row_rate": 0.2553
+    }
+  },
+  "effective_batch_size": 64,
   "eval_preference_manifest": null,
   "eval_record_count": 0,
+  "final_adapter_metadata": {
+    "adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/dpo/dpo-full-colab/adapter",
+    "reference_strategy": "adapter",
+    "source_sft_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-full-colab_adapter_manifest.json"
+  },
   "history_artifacts": {
     "eval_loss_curve_path": null,
     "extra_plot_paths": {
@@ -19,8 +91,42 @@
   "logs_dir": "/content/drive/MyDrive/json-ft-runs/persistent/logs/dpo/dpo-full-colab",
   "merged_model_path": null,
   "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct",
+  "pair_generation": {
+    "build_summary_path": "data/manifests/support_tickets_dataset_build_summary.json",
+    "candidate_count": 8,
+    "composition_summary_path": "artifacts/metrics/support_tickets_dataset_composition.json",
+    "generation": {
+      "base_seed": 17,
+      "do_sample": true,
+      "max_new_tokens": 256,
+      "temperature": 0.8,
+      "top_p": 0.95
+    },
+    "inference_batch_size": 1,
+    "input_path": "data/manifests/support_tickets_canonical.jsonl",
+    "prompt_source": "messages",
+    "quality_gates": {
+      "max_similarity_ratio": 0.96,
+      "minimum_candidate_count_after_dedup": 2,
+      "minimum_score_gap": 0.4,
+      "reject_same_failure_mode": true,
+      "require_chosen_schema_valid": true
+    },
+    "sample_limit": null,
+    "sample_percent": null,
+    "sample_seed": 17,
+    "source_format": "json_extraction",
+    "source_split": "train"
+  },
   "preference_manifest": "/content/drive/MyDrive/json-ft-runs/persistent/preferences/pref-full-colab/pref-full-colab_dpo_pairs.jsonl",
   "profile": "full",
+  "quality_gates": {
+    "max_similarity_ratio": 0.96,
+    "minimum_candidate_count_after_dedup": 2,
+    "minimum_score_gap": 0.4,
+    "reject_same_failure_mode": true,
+    "require_chosen_schema_valid": true
+  },
   "quantization": {
     "bnb_4bit_quant_type": "nf4",
     "bnb_4bit_use_double_quant": true,
@@ -28,29 +134,55 @@
     "enabled": true,
     "load_in_4bit": true
   },
-  "reference_adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-qwen2.5-1.5b-qlora-v1/adapter",
+  "reference_adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-full-colab/adapter",
   "reference_strategy": "adapter",
   "run_name": "dpo-full-colab",
-  "source_adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-qwen2.5-1.5b-qlora-v1/adapter",
-  "source_sft_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-qwen2.5-1.5b-qlora-v1_adapter_manifest.json",
+  "source_adapter_path": "/content/drive/MyDrive/json-ft-runs/persistent/checkpoints/sft/sft-full-colab/adapter",
+  "source_sft_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/sft-full-colab_adapter_manifest.json",
   "stage": "dpo",
   "status": "completed",
-  "train_metrics": {
-    "total_flos": 84671478558720.0,
-    "train_loss": 0.6953771859407425,
-    "train_runtime": 90.4014,
-    "train_samples_per_second": 0.155,
-    "train_steps_per_second": 0.044
+  "subset_selection": {
+    "eval": {
+      "absolute_limit_applied": false,
+      "original_row_count": 0,
+      "percent_row_count": null,
+      "sample_limit": null,
+      "sample_mode": "full",
+      "sample_percent": 1.0,
+      "sample_seed": null,
+      "selected_fraction": 0.0,
+      "selected_row_count": 0
+    },
+    "train": {
+      "absolute_limit_applied": false,
+      "original_row_count": 2858,
+      "percent_row_count": null,
+      "sample_limit": null,
+      "sample_mode": "full",
+      "sample_percent": 1.0,
+      "sample_seed": null,
+      "selected_fraction": 1.0,
+      "selected_row_count": 2858
+    }
   },
-  "train_record_count": 7,
+  "train_metrics": {
+    "effective_batch_size": 64,
+    "total_flos": 4.755574390533734e+16,
+    "train_loss": 0.2130216732621193,
+    "train_runtime": 1073.1138,
+    "train_samples_per_second": 5.327,
+    "train_steps_per_second": 0.084
+  },
+  "train_record_count": 2858,
   "trainer_state_path": "/content/drive/MyDrive/json-ft-runs/persistent/logs/dpo/dpo-full-colab/trainer_state.json",
   "training": {
     "beta": 0.1,
     "eval_preference_manifest": null,
     "eval_sample_limit": null,
+    "eval_sample_percent": 1.0,
     "eval_steps": null,
     "eval_strategy": "no",
-    "gradient_accumulation_steps": 4,
+    "gradient_accumulation_steps": 8,
     "gradient_checkpointing": true,
     "learning_rate": 5e-06,
     "logging_steps": 1,
@@ -61,15 +193,18 @@
     "max_steps": null,
     "num_train_epochs": 2,
     "optim": "paged_adamw_32bit",
-    "per_device_eval_batch_size": 1,
-    "per_device_train_batch_size": 1,
+    "per_device_eval_batch_size": 8,
+    "per_device_train_batch_size": 8,
     "precompute_ref_log_probs": false,
     "preference_manifest": null,
     "report_to": [],
+    "sample_seed": 17,
     "save_steps": null,
     "save_strategy": "epoch",
     "save_total_limit": 2,
+    "seed": 17,
     "train_sample_limit": null,
+    "train_sample_percent": 1.0,
     "warmup_ratio": 0.05,
     "weight_decay": 0.0
   }

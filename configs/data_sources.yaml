@@ -41,6 +41,8 @@ sources:
     enabled_by_default: true
     source_notes: Real complaint narratives add lexical diversity and more null-heavy customer context.
     local_fixture_path: data/fixtures/source_adapter_samples/cfpb_consumer_complaints.csv
+    download_url: https://files.consumerfinance.gov/ccdb/complaints.csv.zip
+    archive_member_name: complaints.csv
 
   - dataset_name: suneeldk_text_json
     source_type: huggingface

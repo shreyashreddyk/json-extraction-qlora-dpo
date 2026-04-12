@@ -101,7 +101,10 @@ class PreferenceScoringTest(unittest.TestCase):
         ranked = rank_preference_candidates([loose_candidate, faithful_candidate])
 
         self.assertEqual(ranked[0].candidate_index, 0)
-        self.assertGreater(faithful_candidate.scorecard.summary_f1, loose_candidate.scorecard.summary_f1)
+        self.assertGreater(
+            faithful_candidate.scorecard.summary_faithfulness_proxy,
+            loose_candidate.scorecard.summary_faithfulness_proxy,
+        )
 
     def test_more_concise_summary_breaks_ties(self) -> None:
         concise_card = CandidateScorecard(
@@ -116,11 +119,15 @@ class PreferenceScoringTest(unittest.TestCase):
             actions_tp=2,
             actions_fp=0,
             actions_fn=0,
-            summary_f1=0.8,
+            summary_faithfulness_proxy=0.8,
             summary_word_count=10,
             summary_overlap=8,
             summary_fp=2,
             summary_fn=2,
+            null_handling_mistake_count=0,
+            concision_score=1.0,
+            dominant_failure_mode="clean",
+            numeric_score=20.0,
             stable_text_key="concise",
         )
         verbose_card = CandidateScorecard(
@@ -135,11 +142,15 @@ class PreferenceScoringTest(unittest.TestCase):
             actions_tp=2,
             actions_fp=0,
             actions_fn=0,
-            summary_f1=0.8,
+            summary_faithfulness_proxy=0.8,
             summary_word_count=14,
             summary_overlap=8,
             summary_fp=6,
             summary_fn=2,
+            null_handling_mistake_count=0,
+            concision_score=0.7,
+            dominant_failure_mode="clean",
+            numeric_score=19.5,
             stable_text_key="verbose",
         )
         concise_candidate = RankedCandidate(
@@ -180,11 +191,15 @@ class PreferenceScoringTest(unittest.TestCase):
             actions_tp=0,
             actions_fp=0,
             actions_fn=0,
-            summary_f1=0.0,
+            summary_faithfulness_proxy=0.0,
             summary_word_count=0,
             summary_overlap=0,
             summary_fp=0,
             summary_fn=0,
+            null_handling_mistake_count=0,
+            concision_score=0.0,
+            dominant_failure_mode="parse_failure",
+            numeric_score=0.0,
             stable_text_key="a",
         )
         scorecard_b = CandidateScorecard(
@@ -199,11 +214,15 @@ class PreferenceScoringTest(unittest.TestCase):
             actions_tp=0,
             actions_fp=0,
             actions_fn=0,
-            summary_f1=0.0,
+            summary_faithfulness_proxy=0.0,
             summary_word_count=0,
             summary_overlap=0,
             summary_fp=0,
             summary_fn=0,
+            null_handling_mistake_count=0,
+            concision_score=0.0,
+            dominant_failure_mode="parse_failure",
+            numeric_score=0.0,
             stable_text_key="b",
         )
         candidate_a = RankedCandidate(

@@ -12,6 +12,8 @@ import hashlib
 import json
 import math
 import random
+import urllib.request
+import zipfile
 
 from .augmentations import generate_augmentations
 from .data_registry import DatasetSource, SourceGroup, SourceType, load_dataset_registry
@@ -61,12 +63,16 @@ class BuildProfile:
     augmentation_enabled: bool
     synthetic_source_name: str
     schema_discipline_enabled: bool
+    prefer_local_fixtures: bool
+    allow_fixture_fallback: bool
 
 
 @dataclass(frozen=True)
 class LoadedSourceRows:
     source: DatasetSource
     records: list[dict[str, Any]]
+    resolved_source: str
+    used_local_fixture: bool = False
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
@@ -139,6 +145,8 @@ def load_build_profile(
         augmentation_enabled=bool(merged.get("augmentation", {}).get("enabled", True)),
         synthetic_source_name=str(merged.get("augmentation", {}).get("synthetic_source_name", "synthetic_hardening_v1")),
         schema_discipline_enabled=bool(merged.get("schema_discipline_enabled", False)),
+        prefer_local_fixtures=bool(merged.get("prefer_local_fixtures", True)),
+        allow_fixture_fallback=bool(merged.get("allow_fixture_fallback", True)),
     )
 
 
@@ -175,12 +183,48 @@ def _load_csv_file(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def _load_huggingface_dataset(source: DatasetSource, repo_root: Path, raw_root: Path) -> list[dict[str, Any]]:
+def _download_missing_source(*, source: DatasetSource, destination: Path) -> Path | None:
+    """Download a missing local source when the registry provides a public fetch URL."""
+
+    download_url = source.extra.get("download_url")
+    if not download_url:
+        return None
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    archive_member_name = source.extra.get("archive_member_name")
+    if archive_member_name or str(download_url).endswith(".zip"):
+        archive_path = destination.with_suffix(destination.suffix + ".zip")
+        urllib.request.urlretrieve(str(download_url), archive_path)
+        with zipfile.ZipFile(archive_path) as archive:
+            member_name = str(archive_member_name) if archive_member_name else None
+            if member_name is None:
+                csv_members = [name for name in archive.namelist() if name.lower().endswith(".csv")]
+                if not csv_members:
+                    raise FileNotFoundError(
+                        f"Downloaded archive for {source.dataset_name} did not contain a CSV file: {archive_path}"
+                    )
+                member_name = csv_members[0]
+            with archive.open(member_name) as extracted, destination.open("wb") as output_handle:
+                output_handle.write(extracted.read())
+        archive_path.unlink(missing_ok=True)
+        return destination
+
+    urllib.request.urlretrieve(str(download_url), destination)
+    return destination
+
+
+def _load_huggingface_dataset(
+    source: DatasetSource,
+    repo_root: Path,
+    raw_root: Path,
+    *,
+    prefer_local_fixtures: bool,
+) -> tuple[list[dict[str, Any]], str, bool]:
     fixture_path = source.resolve_local_fixture_path(repo_root)
-    if fixture_path is not None and fixture_path.exists():
+    if prefer_local_fixtures and fixture_path is not None and fixture_path.exists():
         if fixture_path.suffix == ".csv":
-            return _load_csv_file(fixture_path)
-        return _load_jsonl_file(fixture_path)
+            return _load_csv_file(fixture_path), str(fixture_path.resolve()), True
+        return _load_jsonl_file(fixture_path), str(fixture_path.resolve()), True
 
     try:
         from datasets import load_dataset
@@ -192,7 +236,7 @@ def _load_huggingface_dataset(source: DatasetSource, repo_root: Path, raw_root: 
     split = source.hf_split or "train"
     cache_dir = (raw_root / "huggingface_cache").resolve()
     dataset = load_dataset(source.source_uri_or_path, split=split, cache_dir=str(cache_dir))
-    return [dict(row) for row in dataset]
+    return [dict(row) for row in dataset], source.source_uri_or_path, False
 
 
 def load_source_rows(
@@ -200,30 +244,53 @@ def load_source_rows(
     source: DatasetSource,
     repo_root: Path,
     raw_root: Path,
+    prefer_local_fixtures: bool,
+    allow_fixture_fallback: bool,
 ) -> LoadedSourceRows:
     """Load raw rows for one registry source."""
 
     if source.source_type == SourceType.GENERATED:
-        return LoadedSourceRows(source=source, records=[])
+        return LoadedSourceRows(source=source, records=[], resolved_source=source.source_uri_or_path)
 
     if source.source_type == SourceType.HUGGINGFACE:
-        rows = _load_huggingface_dataset(source, repo_root, raw_root)
-        return LoadedSourceRows(source=source, records=rows)
+        rows, resolved_source, used_local_fixture = _load_huggingface_dataset(
+            source,
+            repo_root,
+            raw_root,
+            prefer_local_fixtures=prefer_local_fixtures,
+        )
+        return LoadedSourceRows(
+            source=source,
+            records=rows,
+            resolved_source=resolved_source,
+            used_local_fixture=used_local_fixture,
+        )
 
     path = source.resolve_source_path(repo_root, raw_root)
     if path is None:
         raise FileNotFoundError(f"Could not resolve source path for {source.dataset_name}")
     if not path.exists():
+        downloaded_path = _download_missing_source(source=source, destination=path)
+        if downloaded_path is not None:
+            path = downloaded_path
         fixture_path = source.resolve_local_fixture_path(repo_root)
-        if fixture_path is not None and fixture_path.exists():
+        if not path.exists() and allow_fixture_fallback and fixture_path is not None and fixture_path.exists():
             path = fixture_path
-        else:
+        elif not path.exists():
             raise FileNotFoundError(f"Source data does not exist for {source.dataset_name}: {path}")
     if source.source_type == SourceType.LOCAL_CSV or path.suffix == ".csv":
         rows = _load_csv_file(path)
     else:
         rows = _load_jsonl_file(path)
-    return LoadedSourceRows(source=source, records=rows)
+    fixture_path = source.resolve_local_fixture_path(repo_root)
+    return LoadedSourceRows(
+        source=source,
+        records=rows,
+        resolved_source=str(path.resolve()),
+        used_local_fixture=(
+            fixture_path is not None and fixture_path.exists() and fixture_path.resolve() == path.resolve()
+        ),
+    )
 
 
 def _hash_text(value: str) -> str:
@@ -275,12 +342,7 @@ def adapt_loaded_rows(
 
     accepted: list[JsonExtractionSample] = []
     rejected: list[AdapterReject] = []
-    path = loaded.source.resolve_source_path(repo_root, profile.raw_root)
-    if loaded.source.source_type == SourceType.HUGGINGFACE:
-        fixture_path = loaded.source.resolve_local_fixture_path(repo_root)
-        resolved_source = str(fixture_path.resolve()) if fixture_path is not None and fixture_path.exists() else loaded.source.source_uri_or_path
-    else:
-        resolved_source = str(path) if path is not None else loaded.source.source_uri_or_path
+    resolved_source = loaded.resolved_source
     ingested_at = datetime.now(UTC).isoformat()
 
     for raw in loaded.records:
@@ -480,6 +542,8 @@ def summarize_dataset(
         "seed": profile.seed,
         "raw_root": str(profile.raw_root),
         "runtime_root": str(profile.runtime_root) if profile.runtime_root is not None else None,
+        "prefer_local_fixtures": profile.prefer_local_fixtures,
+        "allow_fixture_fallback": profile.allow_fixture_fallback,
         "registry_sources": [source.dataset_name for source in registry],
         "total_rows": len(samples),
         "split_counts": dict(sorted(split_counts.items())),
@@ -638,12 +702,29 @@ def build_dataset_manifests(
     accepted_samples: list[JsonExtractionSample] = []
     rejects: list[AdapterReject] = []
     generated_source: DatasetSource | None = None
+    source_load_details: dict[str, dict[str, Any]] = {}
 
     for source in active_sources:
         if source.source_type == SourceType.GENERATED:
             generated_source = source
+            source_load_details[source.dataset_name] = {
+                "resolved_source": source.source_uri_or_path,
+                "used_local_fixture": False,
+                "record_count": 0,
+            }
             continue
-        loaded = load_source_rows(source=source, repo_root=repo_root, raw_root=profile.raw_root)
+        loaded = load_source_rows(
+            source=source,
+            repo_root=repo_root,
+            raw_root=profile.raw_root,
+            prefer_local_fixtures=profile.prefer_local_fixtures,
+            allow_fixture_fallback=profile.allow_fixture_fallback,
+        )
+        source_load_details[source.dataset_name] = {
+            "resolved_source": loaded.resolved_source,
+            "used_local_fixture": loaded.used_local_fixture,
+            "record_count": len(loaded.records),
+        }
         source_samples, source_rejects = adapt_loaded_rows(loaded=loaded, profile=profile, repo_root=repo_root)
         accepted_samples.extend(source_samples)
         rejects.extend(source_rejects)
@@ -700,6 +781,21 @@ def build_dataset_manifests(
             "registry_config_path": str(registry_config_path),
             "build_config_path": str(build_config_path),
             "active_sources": [source.dataset_name for source in active_sources],
+            "resolved_source_locations": {
+                source_name: details["resolved_source"]
+                for source_name, details in sorted(source_load_details.items())
+            },
+            "fixture_usage_by_source": {
+                source_name: details["used_local_fixture"]
+                for source_name, details in sorted(source_load_details.items())
+            },
+            "fixture_sources": sorted(
+                source_name for source_name, details in source_load_details.items() if details["used_local_fixture"]
+            ),
+            "loaded_record_counts_by_source": {
+                source_name: details["record_count"]
+                for source_name, details in sorted(source_load_details.items())
+            },
             "artifact_outputs": {key: str(value) for key, value in export_paths.items()},
         }
     )

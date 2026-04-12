@@ -3,119 +3,185 @@
   "backend": "local-transformers",
   "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
   "categorical_exact_match": {
-    "customer.plan_tier": 0.6666666666666666,
-    "issue_category": 1.0,
-    "priority": 0.6666666666666666,
-    "product_area": 0.6666666666666666,
-    "requires_human_followup": 0.6666666666666666,
-    "sentiment": 1.0
+    "customer.plan_tier": 0.7514859437751004,
+    "issue_category": 0.5030522088353414,
+    "priority": 0.46008032128514054,
+    "product_area": 0.6323694779116465,
+    "requires_human_followup": 0.9801606425702811,
+    "sentiment": 0.861285140562249
   },
   "config_path": "/content/drive/MyDrive/json-ft-source/configs/eval.yaml",
   "counts": {
     "hallucinated_prediction_count": 0,
     "json_recovery_count": 0,
-    "json_valid_count": 3,
-    "parse_failure_count": 0,
-    "schema_failure_count": 0,
-    "schema_validation_pass_count": 3
+    "json_valid_count": 12430,
+    "parse_failure_count": 20,
+    "schema_failure_count": 23,
+    "schema_validation_pass_count": 12427
+  },
+  "data_pipeline": {
+    "build_summary": {
+      "leakage_checks": {
+        "eval_root_count": 12450,
+        "is_lineage_clean": true,
+        "leaked_train_row_count": 0,
+        "leaked_train_rows": []
+      },
+      "nullable_field_null_rates": {
+        "customer.account_id": 1.0,
+        "customer.name": 0.9714,
+        "customer.plan_tier": 0.3018
+      },
+      "profile": "full",
+      "schema": {
+        "name": "support_ticket_extraction",
+        "version": "1.0.0"
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "split_counts": {
+        "eval": 12450,
+        "train": 71161
+      },
+      "synthetic_row_rate": 0.2553,
+      "total_rows": 83611
+    },
+    "build_summary_path": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_dataset_build_summary.json",
+    "composition_summary_path": "/content/drive/MyDrive/json-ft-source/artifacts/metrics/support_tickets_dataset_composition.json",
+    "source_composition_snapshot": {
+      "issue_category_counts": {
+        "account_access": 9091,
+        "billing": 7115,
+        "feature_request": 13427,
+        "general_question": 1062,
+        "integration": 4783,
+        "other": 26192,
+        "technical_bug": 21941
+      },
+      "priority_counts": {
+        "high": 28657,
+        "low": 18349,
+        "medium": 30292,
+        "urgent": 6313
+      },
+      "source_counts": {
+        "console_ai_it_helpdesk_synthetic_tickets": 500,
+        "prady06_customer_support_tickets": 61763,
+        "synthetic_hardening_v1": 21341,
+        "synthetic_support_tickets_v1": 7
+      },
+      "source_group_counts": {
+        "domain_task_data": 62270,
+        "synthetic_augmentation_data": 21341
+      },
+      "synthetic_row_rate": 0.2553
+    }
   },
   "dataset_path": "/content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_eval_manifest.jsonl",
   "field_level": {
     "macro": {
-      "f1": 0.6666666666666666,
-      "precision": 0.6666666666666666,
-      "recall": 0.6666666666666666
+      "f1": 0.6871204001429082,
+      "precision": 0.687673192097971,
+      "recall": 0.6865684962070504
     },
     "micro": {
-      "f1": 0.6206896551724138,
-      "fn": 11,
-      "fp": 11,
-      "precision": 0.6206896551724138,
-      "recall": 0.6206896551724138,
-      "support": 29,
-      "tp": 18
+      "f1": 0.7730104501607716,
+      "fn": 22670,
+      "fp": 22510,
+      "precision": 0.7736323411102172,
+      "recall": 0.7723895582329318,
+      "support": 99600,
+      "tp": 76930
     },
     "per_field": {
       "actions_requested": {
         "f1": 0.0,
-        "fn": 5,
-        "fp": 5,
+        "fn": 0,
+        "fp": 0,
         "precision": 0.0,
         "recall": 0.0,
-        "support": 5,
+        "support": 0,
         "tp": 0
       },
       "customer.account_id": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.9991961414790997,
+        "fn": 20,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 0.9983935742971888,
+        "support": 12450,
+        "tp": 12430
       },
       "customer.name": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.9930868167202573,
+        "fn": 96,
+        "fp": 76,
+        "precision": 0.9938857602574417,
+        "recall": 0.9922891566265061,
+        "support": 12450,
+        "tp": 12354
       },
       "customer.plan_tier": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.7520900321543409,
+        "fn": 3094,
+        "fp": 3074,
+        "precision": 0.7526950925181014,
+        "recall": 0.7514859437751004,
+        "support": 12450,
+        "tp": 9356
       },
       "issue_category": {
-        "f1": 1.0,
-        "fn": 0,
-        "fp": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "support": 3,
-        "tp": 3
+        "f1": 0.5034565916398713,
+        "fn": 6187,
+        "fp": 6167,
+        "precision": 0.5038616251005632,
+        "recall": 0.5030522088353414,
+        "support": 12450,
+        "tp": 6263
       },
       "priority": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.46045016077170414,
+        "fn": 6722,
+        "fp": 6702,
+        "precision": 0.46082059533386965,
+        "recall": 0.46008032128514054,
+        "support": 12450,
+        "tp": 5728
       },
       "product_area": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.6328778135048231,
+        "fn": 4577,
+        "fp": 4557,
+        "precision": 0.6333869670152856,
+        "recall": 0.6323694779116465,
+        "support": 12450,
+        "tp": 7873
       },
       "requires_human_followup": {
-        "f1": 0.6666666666666666,
-        "fn": 1,
-        "fp": 1,
-        "precision": 0.6666666666666666,
-        "recall": 0.6666666666666666,
-        "support": 3,
-        "tp": 2
+        "f1": 0.9809485530546623,
+        "fn": 247,
+        "fp": 227,
+        "precision": 0.9817377312952534,
+        "recall": 0.9801606425702811,
+        "support": 12450,
+        "tp": 12203
       },
       "sentiment": {
-        "f1": 1.0,
-        "fn": 0,
-        "fp": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "support": 3,
-        "tp": 3
+        "f1": 0.8619774919614148,
+        "fn": 1727,
+        "fp": 1707,
+        "precision": 0.8626709573612229,
+        "recall": 0.861285140562249,
+        "support": 12450,
+        "tp": 10723
       }
     }
   },
@@ -127,26 +193,28 @@
   },
   "hallucinated_field_rate": 0.0,
   "json_recovery_rate": 0.0,
-  "json_validity_rate": 1.0,
+  "json_validity_rate": 0.9983935742971888,
   "latency_ms": {
-    "max": 10507.727596999757,
-    "mean": 10266.593081333363,
-    "min": 9900.079903000005,
-    "p50": 10391.97174400033,
-    "p95": 10507.727596999757
+    "max": 22259.177828999895,
+    "mean": 16000.417762348436,
+    "min": 13432.938560000024,
+    "p50": 15644.069403999993,
+    "p95": 20388.679134999962
   },
   "merged_model_path": null,
   "model_manifest_path": "/content/drive/MyDrive/json-ft-source/artifacts/checkpoints/dpo-full-colab_dpo_manifest.json",
   "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct",
-  "parsed_prediction_count": 3,
+  "parsed_prediction_count": 12430,
+  "prior_stage_predictions_path": "/content/drive/MyDrive/json-ft-runs/persistent/reports/sft-full-colab_eval_predictions.jsonl",
   "prompt_source": "messages",
-  "record_count": 3,
+  "qualitative_summary": "Use the example buckets and per-field diagnostics for qualitative review. The free-text summary field remains qualitative and is not scored as an aggregate metric.",
+  "record_count": 12450,
   "run_name": "dpo-full-colab_eval",
   "sample_limit": null,
   "schema": {
     "name": "support_ticket_extraction",
     "version": "1.0.0"
   },
-  "schema_validation_pass_rate": 1.0,
+  "schema_validation_pass_rate": 0.9981526104417671,
   "stage": "dpo"
 }

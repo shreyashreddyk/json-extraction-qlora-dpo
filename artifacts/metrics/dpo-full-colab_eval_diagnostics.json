@@ -1,0 +1,821 @@
+{
+  "bucket_counts": {
+    "null_handling_mistakes": 2998,
+    "semantic_failures": 11197,
+    "syntax_failures": 23
+  },
+  "categorical_confusion_like": {
+    "customer.plan_tier": [
+      {
+        "count": 9346,
+        "predicted": "pro",
+        "reference": "pro"
+      },
+      {
+        "count": 2998,
+        "predicted": "pro",
+        "reference": "None"
+      },
+      {
+        "count": 41,
+        "predicted": "pro",
+        "reference": "free"
+      },
+      {
+        "count": 16,
+        "predicted": "pro",
+        "reference": "business"
+      },
+      {
+        "count": 15,
+        "predicted": "None",
+        "reference": "pro"
+      },
+      {
+        "count": 9,
+        "predicted": "enterprise",
+        "reference": "enterprise"
+      },
+      {
+        "count": 9,
+        "predicted": "pro",
+        "reference": "enterprise"
+      },
+      {
+        "count": 9,
+        "predicted": "enterprise",
+        "reference": "pro"
+      },
+      {
+        "count": 5,
+        "predicted": "None",
+        "reference": "None"
+      },
+      {
+        "count": 1,
+        "predicted": "enterprise",
+        "reference": "free"
+      },
+      {
+        "count": 1,
+        "predicted": "free",
+        "reference": "free"
+      }
+    ],
+    "issue_category": [
+      {
+        "count": 3006,
+        "predicted": "other",
+        "reference": "other"
+      },
+      {
+        "count": 2091,
+        "predicted": "technical_bug",
+        "reference": "technical_bug"
+      },
+      {
+        "count": 1054,
+        "predicted": "other",
+        "reference": "technical_bug"
+      },
+      {
+        "count": 949,
+        "predicted": "technical_bug",
+        "reference": "feature_request"
+      },
+      {
+        "count": 835,
+        "predicted": "technical_bug",
+        "reference": "other"
+      },
+      {
+        "count": 757,
+        "predicted": "other",
+        "reference": "feature_request"
+      },
+      {
+        "count": 586,
+        "predicted": "billing",
+        "reference": "billing"
+      },
+      {
+        "count": 507,
+        "predicted": "technical_bug",
+        "reference": "integration"
+      },
+      {
+        "count": 462,
+        "predicted": "other",
+        "reference": "account_access"
+      },
+      {
+        "count": 408,
+        "predicted": "technical_bug",
+        "reference": "account_access"
+      },
+      {
+        "count": 295,
+        "predicted": "account_access",
+        "reference": "account_access"
+      },
+      {
+        "count": 247,
+        "predicted": "other",
+        "reference": "billing"
+      },
+      {
+        "count": 241,
+        "predicted": "feature_request",
+        "reference": "feature_request"
+      },
+      {
+        "count": 190,
+        "predicted": "technical_bug",
+        "reference": "billing"
+      },
+      {
+        "count": 147,
+        "predicted": "other",
+        "reference": "integration"
+      },
+      {
+        "count": 138,
+        "predicted": "billing",
+        "reference": "other"
+      },
+      {
+        "count": 81,
+        "predicted": "technical_bug",
+        "reference": "general_question"
+      },
+      {
+        "count": 68,
+        "predicted": "feature_request",
+        "reference": "technical_bug"
+      },
+      {
+        "count": 61,
+        "predicted": "other",
+        "reference": "general_question"
+      },
+      {
+        "count": 57,
+        "predicted": "integration",
+        "reference": "technical_bug"
+      },
+      {
+        "count": 49,
+        "predicted": "billing",
+        "reference": "account_access"
+      },
+      {
+        "count": 44,
+        "predicted": "integration",
+        "reference": "integration"
+      },
+      {
+        "count": 40,
+        "predicted": "billing",
+        "reference": "feature_request"
+      },
+      {
+        "count": 33,
+        "predicted": "feature_request",
+        "reference": "billing"
+      },
+      {
+        "count": 33,
+        "predicted": "billing",
+        "reference": "technical_bug"
+      },
+      {
+        "count": 16,
+        "predicted": "account_access",
+        "reference": "billing"
+      },
+      {
+        "count": 10,
+        "predicted": "None",
+        "reference": "other"
+      },
+      {
+        "count": 9,
+        "predicted": "feature_request",
+        "reference": "account_access"
+      },
+      {
+        "count": 8,
+        "predicted": "account_access",
+        "reference": "other"
+      },
+      {
+        "count": 5,
+        "predicted": "integration",
+        "reference": "feature_request"
+      },
+      {
+        "count": 5,
+        "predicted": "None",
+        "reference": "technical_bug"
+      },
+      {
+        "count": 4,
+        "predicted": "feature_request",
+        "reference": "other"
+      },
+      {
+        "count": 3,
+        "predicted": "None",
+        "reference": "billing"
+      },
+      {
+        "count": 3,
+        "predicted": "billing",
+        "reference": "general_question"
+      },
+      {
+        "count": 2,
+        "predicted": "billing",
+        "reference": "integration"
+      },
+      {
+        "count": 2,
+        "predicted": "feature_request",
+        "reference": "integration"
+      },
+      {
+        "count": 1,
+        "predicted": "None",
+        "reference": "account_access"
+      },
+      {
+        "count": 1,
+        "predicted": "integration",
+        "reference": "account_access"
+      },
+      {
+        "count": 1,
+        "predicted": "integration",
+        "reference": "billing"
+      },
+      {
+        "count": 1,
+        "predicted": "None",
+        "reference": "feature_request"
+      }
+    ],
+    "priority": [
+      {
+        "count": 2942,
+        "predicted": "high",
+        "reference": "high"
+      },
+      {
+        "count": 2584,
+        "predicted": "high",
+        "reference": "medium"
+      },
+      {
+        "count": 1815,
+        "predicted": "medium",
+        "reference": "medium"
+      },
+      {
+        "count": 1319,
+        "predicted": "medium",
+        "reference": "low"
+      },
+      {
+        "count": 1145,
+        "predicted": "high",
+        "reference": "low"
+      },
+      {
+        "count": 862,
+        "predicted": "medium",
+        "reference": "high"
+      },
+      {
+        "count": 663,
+        "predicted": "urgent",
+        "reference": "urgent"
+      },
+      {
+        "count": 345,
+        "predicted": "urgent",
+        "reference": "high"
+      },
+      {
+        "count": 308,
+        "predicted": "low",
+        "reference": "low"
+      },
+      {
+        "count": 263,
+        "predicted": "high",
+        "reference": "urgent"
+      },
+      {
+        "count": 71,
+        "predicted": "low",
+        "reference": "medium"
+      },
+      {
+        "count": 59,
+        "predicted": "low",
+        "reference": "high"
+      },
+      {
+        "count": 38,
+        "predicted": "urgent",
+        "reference": "medium"
+      },
+      {
+        "count": 13,
+        "predicted": "urgent",
+        "reference": "low"
+      },
+      {
+        "count": 10,
+        "predicted": "None",
+        "reference": "medium"
+      },
+      {
+        "count": 6,
+        "predicted": "None",
+        "reference": "high"
+      },
+      {
+        "count": 4,
+        "predicted": "None",
+        "reference": "low"
+      },
+      {
+        "count": 3,
+        "predicted": "medium",
+        "reference": "urgent"
+      }
+    ],
+    "product_area": [
+      {
+        "count": 5139,
+        "predicted": "other",
+        "reference": "other"
+      },
+      {
+        "count": 1755,
+        "predicted": "other",
+        "reference": "web_app"
+      },
+      {
+        "count": 1391,
+        "predicted": "integrations",
+        "reference": "integrations"
+      },
+      {
+        "count": 537,
+        "predicted": "billing_portal",
+        "reference": "billing_portal"
+      },
+      {
+        "count": 519,
+        "predicted": "web_app",
+        "reference": "other"
+      },
+      {
+        "count": 410,
+        "predicted": "other",
+        "reference": "account_portal"
+      },
+      {
+        "count": 399,
+        "predicted": "web_app",
+        "reference": "web_app"
+      },
+      {
+        "count": 327,
+        "predicted": "api",
+        "reference": "api"
+      },
+      {
+        "count": 292,
+        "predicted": "other",
+        "reference": "billing_portal"
+      },
+      {
+        "count": 228,
+        "predicted": "billing_portal",
+        "reference": "other"
+      },
+      {
+        "count": 210,
+        "predicted": "integrations",
+        "reference": "api"
+      },
+      {
+        "count": 170,
+        "predicted": "integrations",
+        "reference": "other"
+      },
+      {
+        "count": 169,
+        "predicted": "other",
+        "reference": "api"
+      },
+      {
+        "count": 136,
+        "predicted": "other",
+        "reference": "mobile_app"
+      },
+      {
+        "count": 109,
+        "predicted": "integrations",
+        "reference": "billing_portal"
+      },
+      {
+        "count": 100,
+        "predicted": "integrations",
+        "reference": "web_app"
+      },
+      {
+        "count": 76,
+        "predicted": "mobile_app",
+        "reference": "mobile_app"
+      },
+      {
+        "count": 65,
+        "predicted": "other",
+        "reference": "integrations"
+      },
+      {
+        "count": 59,
+        "predicted": "billing_portal",
+        "reference": "web_app"
+      },
+      {
+        "count": 47,
+        "predicted": "integrations",
+        "reference": "account_portal"
+      },
+      {
+        "count": 47,
+        "predicted": "other",
+        "reference": "unknown"
+      },
+      {
+        "count": 46,
+        "predicted": "mobile_app",
+        "reference": "web_app"
+      },
+      {
+        "count": 39,
+        "predicted": "web_app",
+        "reference": "account_portal"
+      },
+      {
+        "count": 25,
+        "predicted": "integrations",
+        "reference": "mobile_app"
+      },
+      {
+        "count": 24,
+        "predicted": "web_app",
+        "reference": "billing_portal"
+      },
+      {
+        "count": 19,
+        "predicted": "billing_portal",
+        "reference": "account_portal"
+      },
+      {
+        "count": 15,
+        "predicted": "web_app",
+        "reference": "mobile_app"
+      },
+      {
+        "count": 13,
+        "predicted": "web_app",
+        "reference": "api"
+      },
+      {
+        "count": 13,
+        "predicted": "web_app",
+        "reference": "unknown"
+      },
+      {
+        "count": 12,
+        "predicted": "None",
+        "reference": "other"
+      },
+      {
+        "count": 9,
+        "predicted": "billing_portal",
+        "reference": "api"
+      },
+      {
+        "count": 7,
+        "predicted": "billing_portal",
+        "reference": "mobile_app"
+      },
+      {
+        "count": 4,
+        "predicted": "account_portal",
+        "reference": "account_portal"
+      },
+      {
+        "count": 4,
+        "predicted": "api",
+        "reference": "integrations"
+      },
+      {
+        "count": 4,
+        "predicted": "web_app",
+        "reference": "integrations"
+      },
+      {
+        "count": 4,
+        "predicted": "mobile_app",
+        "reference": "other"
+      },
+      {
+        "count": 4,
+        "predicted": "integrations",
+        "reference": "unknown"
+      },
+      {
+        "count": 4,
+        "predicted": "None",
+        "reference": "web_app"
+      },
+      {
+        "count": 3,
+        "predicted": "billing_portal",
+        "reference": "integrations"
+      },
+      {
+        "count": 3,
+        "predicted": "account_portal",
+        "reference": "other"
+      },
+      {
+        "count": 3,
+        "predicted": "account_portal",
+        "reference": "web_app"
+      },
+      {
+        "count": 2,
+        "predicted": "None",
+        "reference": "api"
+      },
+      {
+        "count": 2,
+        "predicted": "None",
+        "reference": "billing_portal"
+      },
+      {
+        "count": 2,
+        "predicted": "api",
+        "reference": "mobile_app"
+      },
+      {
+        "count": 1,
+        "predicted": "patient_portal",
+        "reference": "api"
+      },
+      {
+        "count": 1,
+        "predicted": "api",
+        "reference": "billing_portal"
+      },
+      {
+        "count": 1,
+        "predicted": "telemedizin-portal",
+        "reference": "other"
+      },
+      {
+        "count": 1,
+        "predicted": "patient_portal",
+        "reference": "web_app"
+      }
+    ],
+    "requires_human_followup": [
+      {
+        "count": 12203,
+        "predicted": "True",
+        "reference": "True"
+      },
+      {
+        "count": 227,
+        "predicted": "True",
+        "reference": "False"
+      },
+      {
+        "count": 20,
+        "predicted": "None",
+        "reference": "True"
+      }
+    ],
+    "sentiment": [
+      {
+        "count": 8809,
+        "predicted": "neutral",
+        "reference": "neutral"
+      },
+      {
+        "count": 1833,
+        "predicted": "positive",
+        "reference": "positive"
+      },
+      {
+        "count": 945,
+        "predicted": "neutral",
+        "reference": "positive"
+      },
+      {
+        "count": 365,
+        "predicted": "positive",
+        "reference": "neutral"
+      },
+      {
+        "count": 317,
+        "predicted": "neutral",
+        "reference": "negative"
+      },
+      {
+        "count": 81,
+        "predicted": "negative",
+        "reference": "negative"
+      },
+      {
+        "count": 54,
+        "predicted": "positive",
+        "reference": "negative"
+      },
+      {
+        "count": 20,
+        "predicted": "None",
+        "reference": "neutral"
+      },
+      {
+        "count": 17,
+        "predicted": "negative",
+        "reference": "neutral"
+      },
+      {
+        "count": 9,
+        "predicted": "negative",
+        "reference": "positive"
+      }
+    ]
+  },
+  "per_field_error_counts": {
+    "actions_requested": {
+      "mismatch": 20,
+      "missing": 20,
+      "null_handling_mistake": 0
+    },
+    "customer.account_id": {
+      "mismatch": 0,
+      "missing": 0,
+      "null_handling_mistake": 0
+    },
+    "customer.name": {
+      "mismatch": 76,
+      "missing": 66,
+      "null_handling_mistake": 0
+    },
+    "customer.plan_tier": {
+      "mismatch": 3089,
+      "missing": 15,
+      "null_handling_mistake": 2998
+    },
+    "issue_category": {
+      "mismatch": 6187,
+      "missing": 20,
+      "null_handling_mistake": 0
+    },
+    "priority": {
+      "mismatch": 6722,
+      "missing": 20,
+      "null_handling_mistake": 0
+    },
+    "product_area": {
+      "mismatch": 4577,
+      "missing": 20,
+      "null_handling_mistake": 0
+    },
+    "requires_human_followup": {
+      "mismatch": 247,
+      "missing": 20,
+      "null_handling_mistake": 0
+    },
+    "sentiment": {
+      "mismatch": 1727,
+      "missing": 20,
+      "null_handling_mistake": 0
+    }
+  },
+  "qualitative_summary": "Use the example buckets and per-field diagnostics for qualitative review. The free-text summary field remains qualitative and is not scored as an aggregate metric.",
+  "top_regressions_vs_prior_stage": [
+    {
+      "current_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": \"pro\"\n  },\n  \"issue_category\": \"other\",\n  \"priority\": \"medium\",\n  \"product_area\": \"web_app\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\",\n  \"summary\": \"Unregelm\\u00e4\\u00dssige Ladezeiten bei Projektmanagement-Dashboard gemeldet\"\n}",
+      "current_semantic_score": 0.2222222222222222,
+      "current_stage_label": "dpo",
+      "current_syntax": [
+        0,
+        0,
+        1
+      ],
+      "prior_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": null\n  },\n  \"issue_category\": \"other\",\n  \"priority\": \"medium\",\n  \"product_area\": \"web_app\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\"\n}",
+      "prior_semantic_score": 0.7777777777777778,
+      "prior_stage_label": "sft",
+      "prior_syntax": [
+        1,
+        0,
+        1
+      ],
+      "reason": "Current stage regressed on syntax.",
+      "record_id": "support-ticket-4ce8105210"
+    },
+    {
+      "current_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": \"pro\"\n  },\n  \"issue_category\": \"other\",\n  \"priority\": \"medium\",\n  \"product_area\": \"web_app\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\",\n  \"summary\": \"Bez\\u00fcglich eines Problems: \\'Fehler\\'\"\n}",
+      "current_semantic_score": 0.2222222222222222,
+      "current_stage_label": "dpo",
+      "current_syntax": [
+        0,
+        0,
+        1
+      ],
+      "prior_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": null\n  },\n  \"issue_category\": \"other\",\n  \"priority\": \"medium\",\n  \"product_area\": \"web_app\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\",\n  \"summary\": \"Bez\\u00fcglich eines Problems: \\u00c4berf\\u00fcg\"\n}",
+      "prior_semantic_score": 0.7777777777777778,
+      "prior_stage_label": "sft",
+      "prior_syntax": [
+        1,
+        1,
+        1
+      ],
+      "reason": "Current stage regressed on syntax.",
+      "record_id": "support-ticket-e8f24f769a"
+    },
+    {
+      "current_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": \"pro\"\n  },\n  \"issue_category\": \"technical_bug\",\n  \"priority\": \"high\",\n  \"product_area\": \"integrations\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\",\n  \"summary\": \"Verbesserung der Investment-Analyse f\\u00fcr Microsoft Azure-L\\xf6sungen\"\n}",
+      "current_semantic_score": 0.3333333333333333,
+      "current_stage_label": "dpo",
+      "current_syntax": [
+        0,
+        0,
+        1
+      ],
+      "prior_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": null\n  },\n  \"issue_category\": \"technical_bug\",\n  \"priority\": \"high\",\n  \"product_area\": \"integrations\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\",\n  \"summary\": \"Verbesserung der Investment-Analyse f\\u00fcr Microsoft Azure-L\\u00fcsungen\"\n}",
+      "prior_semantic_score": 0.7777777777777778,
+      "prior_stage_label": "sft",
+      "prior_syntax": [
+        1,
+        1,
+        1
+      ],
+      "reason": "Current stage regressed on syntax.",
+      "record_id": "support-ticket-ab3d578d59"
+    },
+    {
+      "current_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": \"pro\"\n  },\n  \"issue_category\": \"technical_bug\",\n  \"priority\": \"high\",\n  \"product_area\": \"api\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\",\n  \"summary\": \"Gesch\\xe4tsab\\u00e4lfe beeintr\\u00e4chtigt durch API-Serviceunterbrechung\"\n}",
+      "current_semantic_score": 0.2222222222222222,
+      "current_stage_label": "dpo",
+      "current_syntax": [
+        0,
+        0,
+        1
+      ],
+      "prior_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": null\n  },\n  \"issue_category\": \"technical_bug\",\n  \"priority\": \"high\",\n  \"product_area\": \"api\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\"\n}",
+      "prior_semantic_score": 0.6666666666666666,
+      "prior_stage_label": "sft",
+      "prior_syntax": [
+        1,
+        0,
+        1
+      ],
+      "reason": "Current stage regressed on syntax.",
+      "record_id": "support-ticket-f5e0539ad7"
+    },
+    {
+      "current_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": \"pro\"\n  },\n  \"issue_category\": \"other\",\n  \"priority\": \"medium\",\n  \"product_area\": \"other\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\",\n  \"summary\": \"Sehr geehrte Kundensupport, ich kontaktiere Sie wegen Informationen zu Medizindaten-IT-L\\u00f6sungen f\\u00fcr Gesundheitsversorger. K\"\n}",
+      "current_semantic_score": 0.4444444444444444,
+      "current_stage_label": "dpo",
+      "current_syntax": [
+        1,
+        1,
+        1
+      ],
+      "prior_output": "{\n  \"actions_requested\": [],\n  \"customer\": {\n    \"account_id\": null,\n    \"name\": null,\n    \"plan_tier\": null\n  },\n  \"issue_category\": \"billing\",\n  \"priority\": \"high\",\n  \"product_area\": \"billing_portal\",\n  \"requires_human_followup\": true,\n  \"sentiment\": \"neutral\",\n  \"summary\": \"Sehr geehrte Kundensupport, ich kontaktiere Sie wegen Informationen zu Medizindaten-IT-L\\u00f6sungen f\\u00fcr Gesundheitsversorger. K\"\n}",
+      "prior_semantic_score": 0.8888888888888888,
+      "prior_stage_label": "sft",
+      "prior_syntax": [
+        1,
+        1,
+        1
+      ],
+      "reason": "Current stage regressed on semantic score.",
+      "record_id": "support-ticket-2d5f84203b"
+    }
+  ]
+}

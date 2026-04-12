@@ -19,11 +19,22 @@ quantization:
 
 pair_generation:
   input_path: data/manifests/support_tickets_canonical.jsonl
+  build_summary_path: data/manifests/support_tickets_dataset_build_summary.json
+  composition_summary_path: artifacts/metrics/support_tickets_dataset_composition.json
   source_format: json_extraction
   source_split: train
   prompt_source: messages
   candidate_count: 6
+  inference_batch_size: 1
   sample_limit: null
+  sample_percent: null
+  sample_seed: 17
+  quality_gates:
+    minimum_score_gap: 0.35
+    max_similarity_ratio: 0.96
+    reject_same_failure_mode: true
+    require_chosen_schema_valid: true
+    minimum_candidate_count_after_dedup: 2
   generation:
     max_new_tokens: 256
     temperature: 0.8
@@ -32,10 +43,14 @@ pair_generation:
     base_seed: 17
 
 training:
+  seed: 17
   preference_manifest: null
   eval_preference_manifest: null
   train_sample_limit: null
   eval_sample_limit: null
+  train_sample_percent: null
+  eval_sample_percent: null
+  sample_seed: 17
   beta: 0.1
   loss_type: sigmoid
   learning_rate: 5.0e-6
@@ -65,9 +80,12 @@ profiles:
     pair_generation:
       candidate_count: 3
       sample_limit: 3
+      quality_gates:
+        minimum_score_gap: 0.2
     training:
       train_sample_limit: 3
       eval_sample_limit: null
+      num_train_epochs: 1
       max_steps: 5
       per_device_train_batch_size: 1
       gradient_accumulation_steps: 2
@@ -78,8 +96,54 @@ profiles:
 
   full:
     pair_generation:
-      candidate_count: 6
+      candidate_count: 8
       sample_limit: null
+      quality_gates:
+        minimum_score_gap: 0.4
+    training:
+      train_sample_limit: null
+      eval_sample_limit: null
+      num_train_epochs: 2
+      per_device_train_batch_size: 1
+      gradient_accumulation_steps: 4
+      logging_steps: 1
+      eval_strategy: "no"
+      save_strategy: epoch
+      save_steps: null
+
+  large_gpu_full:
+    model:
+      torch_dtype: bfloat16
+      device_map: auto
+    quantization:
+      enabled: false
+      load_in_4bit: false
+      compute_dtype: bfloat16
+    pair_generation:
+      candidate_count: 10
+      sample_limit: null
+      quality_gates:
+        minimum_score_gap: 0.5
+    training:
+      train_sample_limit: null
+      eval_sample_limit: null
+      num_train_epochs: 3
+      max_steps: null
+      per_device_train_batch_size: 4
+      gradient_accumulation_steps: 4
+      learning_rate: 8.0e-6
+      beta: 0.1
+      logging_steps: 2
+      eval_strategy: "no"
+      save_strategy: steps
+      save_steps: 50
+
+  colab_full:
+    pair_generation:
+      candidate_count: 8
+      sample_limit: null
+      quality_gates:
+        minimum_score_gap: 0.4
     training:
       train_sample_limit: null
       eval_sample_limit: null
@@ -94,7 +158,9 @@ profiles:
 artifacts:
   pairs_filename: "{run_name}_dpo_pairs.jsonl"
   audit_filename: "{run_name}_preference_audit.jsonl"
+  preference_summary_filename: "{run_name}_preference_summary.json"
   summary_filename: "{run_name}_dpo_summary.json"
+  diagnostics_filename: "{run_name}_preference_diagnostics.json"
   history_filename: "{run_name}_dpo_history.json"
   checkpoint_manifest_filename: "{run_name}_dpo_manifest.json"
   loss_curve_filename: "{run_name}_dpo_loss_curve.png"
@@ -103,3 +169,7 @@ artifacts:
   rewards_rejected_curve_filename: "{run_name}_dpo_rewards_rejected_curve.png"
   rewards_accuracies_curve_filename: "{run_name}_dpo_rewards_accuracies_curve.png"
   rewards_margins_curve_filename: "{run_name}_dpo_rewards_margins_curve.png"
+  pair_emission_curve_filename: "{run_name}_preference_pair_emission.png"
+  skipped_reasons_curve_filename: "{run_name}_preference_skipped_reasons.png"
+  score_gap_curve_filename: "{run_name}_preference_score_gap.png"
+  source_quality_curve_filename: "{run_name}_preference_source_quality.png"

@@ -27,12 +27,19 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _resolve_repo_path(root: Path, path: Path) -> Path:
+    """Resolve CLI paths relative to the repo root instead of the caller cwd."""
+
+    return path if path.is_absolute() else (root / path)
+
+
 def main() -> int:
     args = build_parser().parse_args()
+    root = repo_root()
     result = build_dataset_manifests(
-        repo_root=repo_root(),
-        registry_config_path=args.registry_config,
-        build_config_path=args.build_config,
+        repo_root=root,
+        registry_config_path=_resolve_repo_path(root, args.registry_config),
+        build_config_path=_resolve_repo_path(root, args.build_config),
         profile_name=args.profile,
         split_filter=args.split,
         seed_override=args.seed,
@@ -49,6 +56,8 @@ def main() -> int:
     print(f"Total rows: {summary['total_rows']}")
     print(f"Split counts: {summary['split_counts']}")
     print(f"Source counts: {summary['source_counts']}")
+    print(f"Active sources: {summary.get('active_sources', [])}")
+    print(f"Fixture sources: {summary.get('fixture_sources', [])}")
     print(f"Synthetic row rate: {summary['synthetic_row_rate']}")
     print(f"Leakage clean: {summary['leakage_checks']['is_lineage_clean']}")
     print(f"Canonical dataset: {result['export_paths']['canonical_output']}")

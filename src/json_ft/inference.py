@@ -55,6 +55,9 @@ class InferenceBackend(Protocol):
     def generate(self, request: InferenceRequest) -> InferenceResponse:
         """Generate a single response for the extraction prompt."""
 
+    def generate_batch(self, requests: list[InferenceRequest]) -> list[InferenceResponse]:
+        """Generate a batch of responses for the extraction prompt."""
+
 
 def build_vllm_serve_command(
     model_name_or_path: str,
@@ -285,6 +288,7 @@ class LocalTransformersInferenceBackend:
 
         use_cuda = bool(torch.cuda.is_available())
         resolved_dtype = _resolve_torch_dtype(torch, torch_dtype, use_cuda)
+        print(f"[eval] Loading tokenizer from {model_name_or_path}...")
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path,
             revision=revision,
@@ -295,6 +299,10 @@ class LocalTransformersInferenceBackend:
             "trust_remote_code": trust_remote_code,
             "device_map": device_map,
         }
+        print(
+            f"[eval] Loading model from {model_name_or_path} "
+            f"(dtype={resolved_dtype}, device_map={device_map or '<none>'})..."
+        )
         try:
             model = AutoModelForCausalLM.from_pretrained(
                 model_name_or_path,
@@ -310,10 +318,13 @@ class LocalTransformersInferenceBackend:
                 **common_model_kwargs,
             )
         if adapter_path and PeftModel is not None:
+            print(f"[eval] Loading adapter from {adapter_path}...")
             model = PeftModel.from_pretrained(model, adapter_path)
         if device_map is None and use_cuda:
+            print("[eval] Moving model to cuda...")
             model = model.to("cuda")
         model.eval()
+        print("[eval] Model backend is ready.")
         return cls(
             model_name_or_path=adapter_path or model_name_or_path,
             tokenizer=tokenizer,
@@ -387,6 +398,99 @@ class LocalTransformersInferenceBackend:
             generation_kwargs=generation_metadata,
             json_recovery_used=recovery_used,
         )
+
+    def generate_batch(self, requests: list[InferenceRequest]) -> list[InferenceResponse]:
+        """Run one batched generation call and return one response per request."""
+
+        import torch
+
+        if not requests:
+            return []
+
+        first_request = requests[0]
+        generation_key = (
+            first_request.max_new_tokens,
+            first_request.temperature,
+            first_request.top_p,
+            first_request.do_sample,
+            first_request.prompt_source,
+            first_request.seed,
+        )
+        for request in requests[1:]:
+            request_key = (
+                request.max_new_tokens,
+                request.temperature,
+                request.top_p,
+                request.do_sample,
+                request.prompt_source,
+                request.seed,
+            )
+            if request_key != generation_key:
+                raise ValueError("Batched evaluation requires requests with identical generation settings.")
+
+        if first_request.seed is not None:
+            torch.manual_seed(first_request.seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(first_request.seed)
+
+        prompt_texts = [self.render_prompt(request) for request in requests]
+        original_padding_side = getattr(self.tokenizer, "padding_side", None)
+        if original_padding_side is not None:
+            self.tokenizer.padding_side = "left"
+        try:
+            encoded = self.tokenizer(
+                prompt_texts,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+            )
+        finally:
+            if original_padding_side is not None:
+                self.tokenizer.padding_side = original_padding_side
+
+        model_device = getattr(self.model, "device", None)
+        if model_device is not None:
+            encoded = {key: value.to(model_device) for key, value in encoded.items()}
+
+        generation_metadata = _build_generation_metadata(first_request, self.tokenizer.pad_token_id)
+        generation_config = _build_generation_config(
+            getattr(self.model, "generation_config", None),
+            first_request,
+            self.tokenizer.pad_token_id,
+        )
+
+        start = perf_counter()
+        with torch.inference_mode():
+            if generation_config is not None:
+                generated = self.model.generate(**encoded, generation_config=generation_config)
+            else:
+                generated = self.model.generate(**encoded, **generation_metadata)
+        batch_latency_ms = (perf_counter() - start) * 1000.0
+
+        prompt_token_count = encoded["input_ids"].shape[-1]
+        responses: list[InferenceResponse] = []
+        for index, request in enumerate(requests):
+            generated_tokens = generated[index][prompt_token_count:]
+            output_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+            parsed_payload, parse_error, validation, recovery_used = analyze_inference_text(
+                output_text,
+                self.schema,
+            )
+            responses.append(
+                InferenceResponse(
+                    text=output_text,
+                    backend=self.backend_name,
+                    latency_ms=batch_latency_ms,
+                    prompt_source=request.prompt_source,
+                    model_name_or_path=self.model_name_or_path,
+                    parsed_payload=parsed_payload,
+                    parse_error=parse_error,
+                    validation=validation,
+                    generation_kwargs=generation_metadata,
+                    json_recovery_used=recovery_used,
+                )
+            )
+        return responses
 
 
 class OfflinePlaceholderInferenceBackend:

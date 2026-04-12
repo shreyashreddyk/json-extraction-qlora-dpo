@@ -3,10 +3,13 @@ from collections import defaultdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import sys
+from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from json_ft.data_build import _sample_rows, assign_split, build_dataset_manifests
+from json_ft.data_build import _sample_rows, assign_split, build_dataset_manifests, load_build_profile, load_source_rows
+from json_ft.data_registry import DatasetSource, SourceGroup, SourceType
 from json_ft.dataset_adapters import DatasetSplit, adapt_source_record
 from json_ft.utils import read_jsonl
 
@@ -91,6 +94,23 @@ class DataBuildTest(unittest.TestCase):
 
         self.assertEqual(first, second)
         self.assertEqual(explicit, DatasetSplit.EVAL)
+
+    def test_build_profiles_use_fixtures_only_for_dev(self) -> None:
+        dev_profile = load_build_profile(
+            config_path=REPO_ROOT / "configs" / "data_build.yaml",
+            repo_root=REPO_ROOT,
+            profile_name="dev",
+        )
+        full_profile = load_build_profile(
+            config_path=REPO_ROOT / "configs" / "data_build.yaml",
+            repo_root=REPO_ROOT,
+            profile_name="full",
+        )
+
+        self.assertTrue(dev_profile.prefer_local_fixtures)
+        self.assertTrue(dev_profile.allow_fixture_fallback)
+        self.assertFalse(full_profile.prefer_local_fixtures)
+        self.assertFalse(full_profile.allow_fixture_fallback)
 
     def test_weighted_sampling_is_deterministic_and_caps_source_share(self) -> None:
         grouped = defaultdict(list)
@@ -197,6 +217,95 @@ class DataBuildTest(unittest.TestCase):
             summary = result["summary"]
             self.assertGreater(summary["adapter_reject_count"], 0)
             self.assertIn("hf_schema_discipline_json_v1", summary["adapter_reject_counts_by_source"])
+
+    def test_full_style_local_source_requires_real_raw_file_when_fixture_fallback_disabled(self) -> None:
+        source = DatasetSource(
+            dataset_name="missing_local_csv",
+            source_type=SourceType.LOCAL_CSV,
+            license_note="test",
+            source_uri_or_path="{raw_root}/missing.csv",
+            adapter_name="cfpb_complaint_csv_v1",
+            source_group=SourceGroup.DOMAIN_TASK_DATA,
+            default_inclusion_weight=1.0,
+            enabled_by_default=True,
+            source_notes="test",
+            local_fixture_path="data/fixtures/source_adapter_samples/cfpb_consumer_complaints.csv",
+        )
+
+        with self.assertRaises(FileNotFoundError):
+            load_source_rows(
+                source=source,
+                repo_root=REPO_ROOT,
+                raw_root=REPO_ROOT / "does-not-exist",
+                prefer_local_fixtures=False,
+                allow_fixture_fallback=False,
+            )
+
+    def test_full_style_huggingface_source_skips_fixture_preference(self) -> None:
+        source = DatasetSource(
+            dataset_name="hf_test",
+            source_type=SourceType.HUGGINGFACE,
+            license_note="test",
+            source_uri_or_path="fake/dataset",
+            adapter_name="hf_customer_support_ticket_v1",
+            source_group=SourceGroup.DOMAIN_TASK_DATA,
+            default_inclusion_weight=1.0,
+            enabled_by_default=True,
+            source_notes="test",
+            local_fixture_path="data/fixtures/source_adapter_samples/prady06_customer_support_tickets.jsonl",
+        )
+
+        fake_datasets = SimpleNamespace(load_dataset=lambda *args, **kwargs: [{"id": "remote-row"}])
+        with patch.dict(sys.modules, {"datasets": fake_datasets}):
+            loaded = load_source_rows(
+                source=source,
+                repo_root=REPO_ROOT,
+                raw_root=REPO_ROOT / "data" / "fixtures" / "source_adapter_samples",
+                prefer_local_fixtures=False,
+                allow_fixture_fallback=False,
+            )
+
+        self.assertEqual(loaded.records, [{"id": "remote-row"}])
+        self.assertEqual(loaded.resolved_source, "fake/dataset")
+        self.assertFalse(loaded.used_local_fixture)
+
+    def test_missing_local_source_can_auto_download_from_public_url(self) -> None:
+        source = DatasetSource(
+            dataset_name="downloadable_csv",
+            source_type=SourceType.LOCAL_CSV,
+            license_note="test",
+            source_uri_or_path="{raw_root}/downloaded.csv",
+            adapter_name="cfpb_complaint_csv_v1",
+            source_group=SourceGroup.DOMAIN_TASK_DATA,
+            default_inclusion_weight=1.0,
+            enabled_by_default=True,
+            source_notes="test",
+            local_fixture_path=None,
+            extra={
+                "download_url": "https://example.com/download.csv",
+            },
+        )
+
+        with TemporaryDirectory() as tmp_dir:
+            raw_root = Path(tmp_dir)
+
+            def fake_urlretrieve(url: str, destination: Path):
+                Path(destination).write_text("Complaint ID,Consumer complaint narrative\n1,Example complaint\n", encoding="utf-8")
+                return str(destination), None
+
+            with patch("json_ft.data_build.urllib.request.urlretrieve", side_effect=fake_urlretrieve):
+                loaded = load_source_rows(
+                    source=source,
+                    repo_root=REPO_ROOT,
+                    raw_root=raw_root,
+                    prefer_local_fixtures=False,
+                    allow_fixture_fallback=False,
+                )
+
+        self.assertEqual(len(loaded.records), 1)
+        self.assertEqual(loaded.records[0]["Complaint ID"], "1")
+        self.assertEqual(loaded.resolved_source, str((raw_root / "downloaded.csv").resolve()))
+        self.assertFalse(loaded.used_local_fixture)
 
 
 if __name__ == "__main__":

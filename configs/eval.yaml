@@ -4,6 +4,9 @@ dataset_path: data/manifests/support_tickets_eval_manifest.jsonl
 prompt_source: messages
 sample_limit: null
 
+inference:
+  eval_batch_size: 4
+
 model:
   revision: null
   trust_remote_code: false
@@ -18,5 +21,7 @@ generation:
 
 artifacts:
   metrics_filename: "{run_name}_metrics.json"
+  diagnostics_filename: "{run_name}_diagnostics.json"
   report_filename: "{run_name}_report.md"
   predictions_filename: "{run_name}_predictions.jsonl"
+  buckets_filename: "{run_name}_example_buckets.jsonl"

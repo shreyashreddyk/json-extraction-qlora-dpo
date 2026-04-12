@@ -37,9 +37,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--adapter-path", default=None)
     parser.add_argument("--merged-model-path", default=None)
     parser.add_argument("--model-manifest", type=Path, default=None)
+    parser.add_argument("--prior-stage-predictions", type=Path, default=None)
     parser.add_argument("--dataset-path", type=Path, default=None)
     parser.add_argument("--prompt-source", choices=("messages", "prompt"), default=None)
     parser.add_argument("--sample-limit", type=int, default=None)
+    parser.add_argument("--eval-batch-size", type=int, default=None)
     parser.add_argument("--max-new-tokens", type=int, default=None)
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--top-p", type=float, default=None)
@@ -70,9 +72,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         adapter_path=args.adapter_path,
         merged_model_path=args.merged_model_path,
         model_manifest_path=args.model_manifest,
+        prior_stage_predictions_path=args.prior_stage_predictions,
         dataset_path=args.dataset_path,
         prompt_source=args.prompt_source,
         sample_limit=args.sample_limit,
+        eval_batch_size=args.eval_batch_size,
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
         top_p=args.top_p,
@@ -107,9 +111,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"Base model: {settings.base_model or '<none>'}")
     print(f"Adapter path: {settings.adapter_path or '<none>'}")
     print(f"Model manifest: {settings.model_manifest_path or '<none>'}")
+    print(f"Prior-stage predictions: {settings.prior_stage_predictions_path or '<none>'}")
     print(f"Backend: {settings.backend}")
     print(f"Prompt source: {settings.prompt_source}")
     print(f"Dataset path: {settings.dataset_path}")
+    print(f"Eval batch size: {settings.eval_batch_size}")
     print(format_runtime_summary(context))
     print(
         format_runtime_backend_summary(
@@ -118,29 +124,37 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     )
 
-    metrics_payload, report_text, prediction_rows = run_model_evaluation(
+    metrics_payload, diagnostics_payload, report_text, prediction_rows, bucket_rows = run_model_evaluation(
         run_name=args.run_name,
         settings=settings,
         schema=schema,
     )
 
     metrics_path = write_json(output_paths["metrics"], metrics_payload)
+    diagnostics_path = write_json(output_paths["diagnostics"], diagnostics_payload)
     report_path = write_text(output_paths["report"], report_text)
     predictions_path = write_jsonl(output_paths["predictions"], prediction_rows)
+    buckets_path = write_jsonl(output_paths["buckets"], bucket_rows)
 
     print(f"Metrics output: {metrics_path}")
+    print(f"Diagnostics output: {diagnostics_path}")
     print(f"Report output: {report_path}")
     print(f"Predictions output: {predictions_path}")
+    print(f"Bucket output: {buckets_path}")
 
     if args.mirror_metrics_to_repo:
         mirrored = mirror_small_artifact(metrics_path, repo_targets["metrics"] / metrics_path.name)
         print(f"Mirrored metrics artifact: {mirrored}")
+        mirrored = mirror_small_artifact(diagnostics_path, repo_targets["metrics"] / diagnostics_path.name)
+        print(f"Mirrored diagnostics artifact: {mirrored}")
     if args.mirror_report_to_repo:
         mirrored = mirror_small_artifact(report_path, repo_targets["reports"] / report_path.name)
         print(f"Mirrored report artifact: {mirrored}")
     if args.mirror_predictions_to_repo:
         mirrored = mirror_small_artifact(predictions_path, repo_targets["reports"] / predictions_path.name)
         print(f"Mirrored predictions artifact: {mirrored}")
+        mirrored = mirror_small_artifact(buckets_path, repo_targets["reports"] / buckets_path.name)
+        print(f"Mirrored bucket artifact: {mirrored}")
 
     return 0
 

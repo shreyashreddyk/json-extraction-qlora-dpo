@@ -9,8 +9,15 @@ import json
 
 from .inference import InferenceRequest, build_inference_backend
 from .manifests import LatestModelManifest
-from .metrics import CATEGORICAL_EXACT_MATCH_FIELDS, EvaluationRecord, evaluate_records
+from .metrics import (
+    CATEGORICAL_EXACT_MATCH_FIELDS,
+    EvaluationRecord,
+    LIST_PRF_FIELDS,
+    STRUCTURED_PRF_FIELDS,
+    evaluate_records,
+)
 from .schemas import SchemaConstraint
+from .stage_metadata import build_data_pipeline_metadata
 from .utils import load_yaml, read_jsonl
 
 
@@ -54,9 +61,13 @@ class EvaluationSettings:
     adapter_path: str | None
     merged_model_path: str | None
     model_manifest_path: Path | None
+    prior_stage_predictions_path: Path | None
     dataset_path: Path
+    build_summary_path: Path | None
+    composition_summary_path: Path | None
     prompt_source: str
     sample_limit: int | None
+    eval_batch_size: int
     generation: dict[str, Any]
     model: dict[str, Any]
     artifacts: dict[str, Any]
@@ -81,9 +92,11 @@ def resolve_eval_settings(
     adapter_path: str | None = None,
     merged_model_path: str | None = None,
     model_manifest_path: Path | None = None,
+    prior_stage_predictions_path: Path | None = None,
     dataset_path: Path | None = None,
     prompt_source: str | None = None,
     sample_limit: int | None = None,
+    eval_batch_size: int | None = None,
     max_new_tokens: int | None = None,
     temperature: float | None = None,
     top_p: float | None = None,
@@ -98,6 +111,7 @@ def resolve_eval_settings(
     config = load_eval_config(config_path)
     model_config = config.get("model", {})
     generation_config = config.get("generation", {})
+    inference_config = config.get("inference", {})
     artifact_config = config.get("artifacts", {})
 
     resolved_manifest_path = _resolve_repo_path(repo_root, model_manifest_path)
@@ -143,13 +157,23 @@ def resolve_eval_settings(
         if resolved_merged_model_path
         else None,
         model_manifest_path=resolved_manifest_path,
+        prior_stage_predictions_path=_resolve_repo_path(repo_root, prior_stage_predictions_path),
         dataset_path=_resolve_repo_path(
             repo_root,
             _config_value(dataset_path, config.get("dataset_path"), default="data/manifests/support_tickets_eval_manifest.jsonl"),
         )
         or (repo_root / "data" / "manifests" / "support_tickets_eval_manifest.jsonl"),
+        build_summary_path=_resolve_repo_path(
+            repo_root,
+            config.get("build_summary_path", "data/manifests/support_tickets_dataset_build_summary.json"),
+        ),
+        composition_summary_path=_resolve_repo_path(
+            repo_root,
+            config.get("composition_summary_path", "artifacts/metrics/support_tickets_dataset_composition.json"),
+        ),
         prompt_source=_config_value(prompt_source, config.get("prompt_source"), default="messages"),
         sample_limit=_config_value(sample_limit, config.get("sample_limit")),
+        eval_batch_size=int(_config_value(eval_batch_size, inference_config.get("eval_batch_size"), default=4)),
         generation={
             "max_new_tokens": _config_value(max_new_tokens, generation_config.get("max_new_tokens"), default=256),
             "temperature": _config_value(temperature, generation_config.get("temperature"), default=0.0),
@@ -164,11 +188,13 @@ def resolve_eval_settings(
         },
         artifacts={
             "metrics_filename": artifact_config.get("metrics_filename", "{run_name}_metrics.json"),
+            "diagnostics_filename": artifact_config.get("diagnostics_filename", "{run_name}_diagnostics.json"),
             "report_filename": artifact_config.get("report_filename", "{run_name}_report.md"),
             "predictions_filename": artifact_config.get(
                 "predictions_filename",
                 "{run_name}_predictions.jsonl",
             ),
+            "buckets_filename": artifact_config.get("buckets_filename", "{run_name}_example_buckets.jsonl"),
         },
     )
 
@@ -188,10 +214,12 @@ def resolve_eval_output_paths(
     return {
         "metrics": metrics_output
         or (context.metrics_dir / artifact_config["metrics_filename"].format(run_name=run_name)),
+        "diagnostics": context.metrics_dir / artifact_config["diagnostics_filename"].format(run_name=run_name),
         "report": report_output
         or (context.reports_dir / artifact_config["report_filename"].format(run_name=run_name)),
         "predictions": predictions_output
         or (context.reports_dir / artifact_config["predictions_filename"].format(run_name=run_name)),
+        "buckets": context.reports_dir / artifact_config["buckets_filename"].format(run_name=run_name),
     }
 
 
@@ -202,6 +230,11 @@ def load_eval_rows(dataset_path: Path, sample_limit: int | None) -> list[dict[st
     if sample_limit is not None:
         return rows[:sample_limit]
     return rows
+
+
+def _chunk_rows(rows: Sequence[dict[str, Any]], batch_size: int) -> list[Sequence[dict[str, Any]]]:
+    size = max(1, int(batch_size))
+    return [rows[index : index + size] for index in range(0, len(rows), size)]
 
 
 def build_inference_request(
@@ -294,6 +327,230 @@ def failure_rows(prediction_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return failures
 
 
+NULLABLE_CUSTOMER_FIELDS = (
+    "customer.name",
+    "customer.account_id",
+    "customer.plan_tier",
+)
+
+
+def _nested_value(payload: dict[str, Any] | None, field_path: str) -> Any:
+    current: Any = payload
+    for part in field_path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return None
+        current = current[part]
+    return current
+
+
+def _list_values(payload: dict[str, Any] | None, field_path: str) -> set[str]:
+    value = _nested_value(payload, field_path)
+    if not isinstance(value, list):
+        return set()
+    return {str(item).strip() for item in value if str(item).strip()}
+
+
+def _semantic_score(row: dict[str, Any]) -> float:
+    predicted = row.get("parsed_payload")
+    reference = row.get("reference_payload") or {}
+    structured_match_count = sum(
+        1
+        for field_name in STRUCTURED_PRF_FIELDS
+        if _nested_value(predicted, field_name) == _nested_value(reference, field_name)
+    )
+    predicted_actions = _list_values(predicted, LIST_PRF_FIELDS[0])
+    reference_actions = _list_values(reference, LIST_PRF_FIELDS[0])
+    overlap = predicted_actions & reference_actions
+    tp = len(overlap)
+    fp = len(predicted_actions - overlap)
+    fn = len(reference_actions - overlap)
+    precision = tp / (tp + fp) if (tp + fp) else 0.0
+    recall = tp / (tp + fn) if (tp + fn) else 0.0
+    actions_f1 = 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
+    return (structured_match_count + actions_f1) / (len(STRUCTURED_PRF_FIELDS) + 1)
+
+
+def _syntax_tuple(row: dict[str, Any]) -> tuple[int, int, int]:
+    return (
+        int(row.get("parsed_payload") is not None),
+        int(bool(row.get("schema_is_valid", False))),
+        int(not row.get("unexpected_fields")),
+    )
+
+
+def _categorical_confusion_like_summary(prediction_rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    summary: dict[str, list[dict[str, Any]]] = {}
+    for field_name in CATEGORICAL_EXACT_MATCH_FIELDS:
+        counts: dict[tuple[str, str], int] = {}
+        for row in prediction_rows:
+            reference_value = str(_nested_value(row.get("reference_payload"), field_name))
+            predicted_value = str(_nested_value(row.get("parsed_payload"), field_name))
+            key = (reference_value, predicted_value)
+            counts[key] = counts.get(key, 0) + 1
+        summary[field_name] = [
+            {"reference": ref, "predicted": pred, "count": count}
+            for (ref, pred), count in sorted(counts.items(), key=lambda item: (-item[1], item[0][0], item[0][1]))
+        ]
+    return summary
+
+
+def _per_field_error_counts(prediction_rows: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    field_names = [*STRUCTURED_PRF_FIELDS, *LIST_PRF_FIELDS]
+    counts: dict[str, dict[str, int]] = {
+        field_name: {"missing": 0, "mismatch": 0, "null_handling_mistake": 0}
+        for field_name in field_names
+    }
+    for row in prediction_rows:
+        predicted = row.get("parsed_payload")
+        reference = row.get("reference_payload") or {}
+        for field_name in field_names:
+            predicted_value = _nested_value(predicted, field_name)
+            reference_value = _nested_value(reference, field_name)
+            if reference_value is not None and predicted_value is None:
+                counts[field_name]["missing"] += 1
+            if predicted_value != reference_value:
+                counts[field_name]["mismatch"] += 1
+            if field_name in NULLABLE_CUSTOMER_FIELDS and reference_value is None and predicted_value not in (None, "", []):
+                counts[field_name]["null_handling_mistake"] += 1
+    return counts
+
+
+def _bucket_labels(row: dict[str, Any]) -> list[str]:
+    labels: list[str] = []
+    if row.get("parse_error"):
+        labels.append("syntax_failures")
+    elif not row.get("schema_is_valid", False):
+        labels.append("syntax_failures")
+
+    if row.get("unexpected_fields"):
+        labels.append("hallucinated_keys")
+
+    predicted = row.get("parsed_payload")
+    reference = row.get("reference_payload") or {}
+    if predicted is not None and predicted != reference:
+        labels.append("semantic_failures")
+
+    for field_name in NULLABLE_CUSTOMER_FIELDS:
+        reference_value = _nested_value(reference, field_name)
+        predicted_value = _nested_value(predicted, field_name)
+        if reference_value is None and predicted_value not in (None, "", []):
+            labels.append("null_handling_mistakes")
+            break
+
+    predicted_actions = _list_values(predicted, LIST_PRF_FIELDS[0])
+    reference_actions = _list_values(reference, LIST_PRF_FIELDS[0])
+    if reference_actions and predicted_actions and predicted_actions != reference_actions:
+        overlap = predicted_actions & reference_actions
+        if overlap and overlap != reference_actions:
+            labels.append("partial_action_extraction")
+    return list(dict.fromkeys(labels))
+
+
+def build_example_buckets(prediction_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Attach bucket labels used for qualitative stage review."""
+
+    bucket_rows: list[dict[str, Any]] = []
+    for row in prediction_rows:
+        labels = _bucket_labels(row)
+        bucket_rows.append(
+            {
+                "record_id": row.get("record_id"),
+                "stage_label": row.get("stage_label"),
+                "bucket_labels": labels,
+                "primary_bucket": labels[0] if labels else "clean",
+                "source_dataset": row.get("source_dataset"),
+                "raw_output": row.get("raw_output"),
+                "parsed_payload": row.get("parsed_payload"),
+                "reference_payload": row.get("reference_payload"),
+                "unexpected_fields": row.get("unexpected_fields"),
+                "parse_error": row.get("parse_error"),
+            }
+        )
+    return bucket_rows
+
+
+def _bucket_counts(bucket_rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in bucket_rows:
+        for label in row.get("bucket_labels", []):
+            counts[label] = counts.get(label, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _load_prior_stage_predictions(path: Path | None) -> dict[str, dict[str, Any]]:
+    if path is None or not path.exists():
+        return {}
+    rows = read_jsonl(path)
+    return {str(row.get("record_id")): row for row in rows}
+
+
+def _top_regressions_vs_prior_stage(
+    prediction_rows: list[dict[str, Any]],
+    prior_stage_predictions_path: Path | None,
+) -> list[dict[str, Any]]:
+    prior_rows = _load_prior_stage_predictions(prior_stage_predictions_path)
+    regressions: list[dict[str, Any]] = []
+    for row in prediction_rows:
+        record_id = str(row.get("record_id"))
+        prior_row = prior_rows.get(record_id)
+        if prior_row is None:
+            continue
+        prior_syntax = _syntax_tuple(prior_row)
+        current_syntax = _syntax_tuple(row)
+        prior_score = _semantic_score(prior_row)
+        current_score = _semantic_score(row)
+        if current_syntax < prior_syntax or current_score + 1e-9 < prior_score:
+            regressions.append(
+                {
+                    "record_id": record_id,
+                    "prior_stage_label": prior_row.get("stage_label"),
+                    "current_stage_label": row.get("stage_label"),
+                    "prior_syntax": prior_syntax,
+                    "current_syntax": current_syntax,
+                    "prior_semantic_score": prior_score,
+                    "current_semantic_score": current_score,
+                    "reason": (
+                        "Current stage regressed on syntax."
+                        if current_syntax < prior_syntax
+                        else "Current stage regressed on semantic score."
+                    ),
+                    "prior_output": prior_row.get("raw_output"),
+                    "current_output": row.get("raw_output"),
+                }
+            )
+    return sorted(
+        regressions,
+        key=lambda item: (
+            item["current_semantic_score"] - item["prior_semantic_score"],
+            item["current_syntax"],
+        ),
+    )[:5]
+
+
+def build_eval_diagnostics(
+    *,
+    prediction_rows: list[dict[str, Any]],
+    settings: EvaluationSettings,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Build richer per-run diagnostics alongside aggregate metrics."""
+
+    bucket_rows = build_example_buckets(prediction_rows)
+    diagnostics = {
+        "qualitative_summary": (
+            "Use the example buckets and per-field diagnostics for qualitative review. "
+            "The free-text summary field remains qualitative and is not scored as an aggregate metric."
+        ),
+        "categorical_confusion_like": _categorical_confusion_like_summary(prediction_rows),
+        "per_field_error_counts": _per_field_error_counts(prediction_rows),
+        "bucket_counts": _bucket_counts(bucket_rows),
+        "top_regressions_vs_prior_stage": _top_regressions_vs_prior_stage(
+            prediction_rows,
+            settings.prior_stage_predictions_path,
+        ),
+    }
+    return diagnostics, bucket_rows
+
+
 def _format_float(value: float) -> str:
     return f"{value:.4f}"
 
@@ -304,6 +561,7 @@ def render_single_run_report(
     settings: EvaluationSettings,
     metrics_payload: dict[str, Any],
     prediction_rows: list[dict[str, Any]],
+    diagnostics_payload: dict[str, Any],
 ) -> str:
     """Render a markdown report for one evaluation run."""
 
@@ -377,6 +635,13 @@ def render_single_run_report(
             f"- Schema failures: `{metrics_payload['counts']['schema_failure_count']}`",
             f"- Hallucinated predictions: `{metrics_payload['counts']['hallucinated_prediction_count']}`",
             f"- Rows with semantic mismatch after parsing: `{len(failures)}`",
+            f"- Null-handling mistakes: `{diagnostics_payload['bucket_counts'].get('null_handling_mistakes', 0)}`",
+            f"- Partial action extraction rows: `{diagnostics_payload['bucket_counts'].get('partial_action_extraction', 0)}`",
+            "",
+            "## Diagnostics",
+            "",
+            f"- Qualitative summary note: {diagnostics_payload['qualitative_summary']}",
+            f"- Prior-stage regressions tracked: `{len(diagnostics_payload['top_regressions_vs_prior_stage'])}`",
             "",
             "## Example Failures",
             "",
@@ -433,7 +698,7 @@ def run_model_evaluation(
     settings: EvaluationSettings,
     schema: SchemaConstraint,
     backend: Any | None = None,
-) -> tuple[dict[str, Any], str, list[dict[str, Any]]]:
+) -> tuple[dict[str, Any], dict[str, Any], str, list[dict[str, Any]], list[dict[str, Any]]]:
     """Execute one evaluation run and return metrics, report text, and predictions."""
 
     rows = load_eval_rows(settings.dataset_path, settings.sample_limit)
@@ -450,33 +715,53 @@ def run_model_evaluation(
 
     evaluation_records: list[EvaluationRecord] = []
     prediction_rows: list[dict[str, Any]] = []
-    for row in rows:
-        response = active_backend.generate(
+    total_rows = len(rows)
+    print(f"[eval] Loaded {total_rows} evaluation rows from {settings.dataset_path}.")
+    row_batches = _chunk_rows(rows, settings.eval_batch_size)
+    total_batches = len(row_batches)
+    supports_batching = hasattr(active_backend, "generate_batch")
+    for batch_index, row_batch in enumerate(row_batches, start=1):
+        batch_start = ((batch_index - 1) * settings.eval_batch_size) + 1
+        batch_end = batch_start + len(row_batch) - 1
+        print(f"[eval] Evaluating batch {batch_index}/{total_batches}: rows {batch_start}-{batch_end}/{total_rows}")
+        requests = [
             build_inference_request(row, settings.prompt_source, settings.generation)
-        )
-        evaluation_records.append(
-            EvaluationRecord(
-                record_id=str(row.get("record_id")),
-                reference_payload=row["reference_payload"],
-                raw_output=response.text,
-                parsed_payload=response.parsed_payload,
-                validation=response.validation,
-                latency_ms=response.latency_ms,
-                json_recovery_used=response.json_recovery_used,
+            for row in row_batch
+        ]
+        if supports_batching and len(requests) > 1:
+            responses = active_backend.generate_batch(requests)
+        else:
+            responses = [active_backend.generate(request) for request in requests]
+
+        for row, response in zip(row_batch, responses, strict=True):
+            record_id = str(row.get("record_id"))
+            evaluation_records.append(
+                EvaluationRecord(
+                    record_id=record_id,
+                    reference_payload=row["reference_payload"],
+                    raw_output=response.text,
+                    parsed_payload=response.parsed_payload,
+                    validation=response.validation,
+                    latency_ms=response.latency_ms,
+                    json_recovery_used=response.json_recovery_used,
+                )
             )
-        )
-        prediction_rows.append(
-            prediction_artifact_row(
-                row,
-                response,
-                stage_label=settings.stage_label,
-                base_model=settings.base_model,
-                adapter_path=settings.adapter_path,
-                merged_model_path=settings.merged_model_path,
+            prediction_rows.append(
+                prediction_artifact_row(
+                    row,
+                    response,
+                    stage_label=settings.stage_label,
+                    base_model=settings.base_model,
+                    adapter_path=settings.adapter_path,
+                    merged_model_path=settings.merged_model_path,
+                )
             )
-        )
 
     aggregate_metrics = evaluate_records(evaluation_records, schema)
+    diagnostics_payload, bucket_rows = build_eval_diagnostics(
+        prediction_rows=prediction_rows,
+        settings=settings,
+    )
     metrics_payload = {
         "stage": settings.stage_label,
         "run_name": run_name,
@@ -487,10 +772,19 @@ def run_model_evaluation(
         "adapter_path": settings.adapter_path,
         "merged_model_path": settings.merged_model_path,
         "model_manifest_path": str(settings.model_manifest_path) if settings.model_manifest_path else None,
+        "prior_stage_predictions_path": (
+            str(settings.prior_stage_predictions_path) if settings.prior_stage_predictions_path else None
+        ),
         "backend": settings.backend,
         "prompt_source": settings.prompt_source,
         "sample_limit": settings.sample_limit,
         "generation": settings.generation,
+        "qualitative_summary": diagnostics_payload["qualitative_summary"],
+        "data_pipeline": build_data_pipeline_metadata(
+            repo_root=settings.config_path.parents[1],
+            build_summary_path=settings.build_summary_path,
+            composition_summary_path=settings.composition_summary_path,
+        ),
         **aggregate_metrics,
     }
     report_text = render_single_run_report(
@@ -498,5 +792,6 @@ def run_model_evaluation(
         settings=settings,
         metrics_payload=metrics_payload,
         prediction_rows=prediction_rows,
+        diagnostics_payload=diagnostics_payload,
     )
-    return metrics_payload, report_text, prediction_rows
+    return metrics_payload, diagnostics_payload, report_text, prediction_rows, bucket_rows

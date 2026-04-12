@@ -6,14 +6,26 @@
 model:
   model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
   trust_remote_code: false
+  device_map: null
+  torch_dtype: auto
   # Qwen chat templates terminate assistant turns with <|im_end|>.
   eos_token: "<|im_end|>"
 
 data:
   train_manifest: data/manifests/support_tickets_sft_messages.jsonl
   eval_manifest: data/manifests/support_tickets_eval_manifest.jsonl
+  build_summary_path: data/manifests/support_tickets_dataset_build_summary.json
+  composition_summary_path: artifacts/metrics/support_tickets_dataset_composition.json
   dataset_format: messages
   max_seq_length: 1024
+  train_sample_percent: null
+  eval_sample_percent: null
+  sample_seed: 17
+  token_cache:
+    enabled: false
+    cache_root: persistent/tokenized/sft
+    mode: rendered_messages
+    save_tokenized_columns: true
 
 quantization:
   enabled: true
@@ -38,14 +50,25 @@ lora:
     - down_proj
 
 training:
+  seed: 17
+  num_train_epochs: 3
+  max_steps: null
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
   learning_rate: 2.0e-4
   lr_scheduler_type: cosine
   warmup_ratio: 0.05
+  warmup_steps: null
   weight_decay: 0.0
   optim: paged_adamw_32bit
   gradient_checkpointing: true
   packing: false
   per_device_eval_batch_size: 1
+  logging_steps: 5
+  eval_strategy: epoch
+  eval_steps: null
+  save_strategy: epoch
+  save_steps: null
   save_total_limit: 2
   report_to: []
   completion_only_loss: true
@@ -59,6 +82,7 @@ profiles:
       eval_sample_limit: 2
     training:
       # Dev effective batch size = 1 x 2 = 2.
+      num_train_epochs: 1
       max_steps: 5
       per_device_train_batch_size: 1
       gradient_accumulation_steps: 2
@@ -73,17 +97,77 @@ profiles:
       train_sample_limit: null
       eval_sample_limit: null
     training:
-      # Full effective batch size = 1 x 8 = 8.
+      # Portable full effective batch size = 1 x 8 = 8.
       num_train_epochs: 3
+      max_steps: null
       per_device_train_batch_size: 1
       gradient_accumulation_steps: 8
+      learning_rate: 2.0e-4
+      lr_scheduler_type: cosine
+      warmup_ratio: 0.05
+      warmup_steps: null
       logging_steps: 5
       eval_strategy: epoch
+      eval_steps: null
       save_strategy: epoch
+      save_steps: null
+
+  large_gpu_full:
+    quantization:
+      enabled: false
+      load_in_4bit: false
+      compute_dtype: bfloat16
+    model:
+      torch_dtype: bfloat16
+      device_map: auto
+    data:
+      train_sample_limit: null
+      eval_sample_limit: null
+      max_seq_length: 1536
+      token_cache:
+        enabled: true
+    training:
+      num_train_epochs: 4
+      max_steps: null
+      per_device_train_batch_size: 4
+      gradient_accumulation_steps: 4
+      learning_rate: 1.5e-4
+      lr_scheduler_type: cosine
+      warmup_ratio: 0.03
+      warmup_steps: null
+      logging_steps: 2
+      eval_strategy: steps
+      eval_steps: 20
+      save_strategy: steps
+      save_steps: 20
+      packing: false
+      gradient_checkpointing: true
+
+  colab_full:
+    data:
+      train_sample_limit: null
+      eval_sample_limit: null
+    training:
+      num_train_epochs: 3
+      max_steps: null
+      per_device_train_batch_size: 1
+      gradient_accumulation_steps: 8
+      learning_rate: 2.0e-4
+      lr_scheduler_type: cosine
+      warmup_ratio: 0.05
+      warmup_steps: null
+      logging_steps: 5
+      eval_strategy: epoch
+      eval_steps: null
+      save_strategy: epoch
+      save_steps: null
 
 artifacts:
   summary_filename: "{run_name}_sft_summary.json"
   history_filename: "{run_name}_sft_history.json"
   loss_curve_filename: "{run_name}_sft_loss_curve.png"
   eval_loss_curve_filename: "{run_name}_sft_eval_loss_curve.png"
+  learning_rate_curve_filename: "{run_name}_sft_learning_rate_curve.png"
+  examples_seen_curve_filename: "{run_name}_sft_examples_seen_curve.png"
+  tokens_seen_curve_filename: "{run_name}_sft_tokens_seen_curve.png"
   checkpoint_manifest_filename: "{run_name}_adapter_manifest.json"

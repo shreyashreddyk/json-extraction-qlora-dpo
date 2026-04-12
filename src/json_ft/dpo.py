@@ -10,6 +10,8 @@ import shutil
 from .artifacts import mirror_small_artifact
 from .manifests import LatestModelManifest, save_latest_model_manifest
 from .runtime import RuntimeContext, resolve_repo_artifact_targets
+from .sampling import SampleSelectionMetadata, select_rows
+from .stage_metadata import build_data_pipeline_metadata
 from .training_plots import PlotSpec, write_training_history_and_plots
 from .utils import load_yaml, read_json, read_jsonl, write_json
 
@@ -19,6 +21,7 @@ DPO_REWARD_METRIC_SPECS = (
     ("rewards/accuracies", "DPO Reward Accuracy", "#9467bd"),
     ("rewards/margins", "DPO Reward Margin", "#ff7f0e"),
 )
+PROFILE_ALIASES = {"colab_full": "full"}
 
 
 def _compact_mapping(values: dict[str, Any]) -> dict[str, Any]:
@@ -95,10 +98,17 @@ class DPOResolvedConfig:
     torch_dtype: str | None
     device_map: str | None
     quantization: dict[str, Any]
+    build_summary_path: Path | None
+    composition_summary_path: Path | None
+    pair_generation: dict[str, Any]
+    quality_gates: dict[str, Any]
     preference_manifest: Path | None
     eval_preference_manifest: Path | None
     train_sample_limit: int | None
     eval_sample_limit: int | None
+    train_sample_percent: float | None
+    eval_sample_percent: float | None
+    sample_seed: int
     training: dict[str, Any]
     artifacts: dict[str, Any]
     raw_config: dict[str, Any]
@@ -149,6 +159,7 @@ def resolve_dpo_config(
     base_model: str | None = None,
     adapter_path: str | None = None,
     merged_model_path: str | None = None,
+    training_overrides: dict[str, Any] | None = None,
 ) -> DPOResolvedConfig:
     """Resolve config defaults plus one named profile into a concrete DPO config."""
 
@@ -158,13 +169,18 @@ def resolve_dpo_config(
         raise FileNotFoundError(f"DPO config does not exist: {config_path}")
     raw_config = load_dpo_config(resolved_config_path)
     profiles = raw_config.get("profiles", {})
+    requested_profile_name = profile_name
+    profile_name = PROFILE_ALIASES.get(profile_name, profile_name)
     if profile_name not in profiles:
         raise ValueError(f"Unknown DPO profile: {profile_name}")
 
     profile_config = profiles[profile_name]
     merged = _deep_merge(raw_config, profile_config)
     model_config = dict(merged.get("model", {}))
+    pair_generation_config = dict(merged.get("pair_generation", {}))
     training_config = dict(merged.get("training", {}))
+    if training_overrides:
+        training_config.update(_compact_mapping(training_overrides))
 
     latest_model_manifest_path = _resolve_repo_path(
         resolved_repo_root,
@@ -272,13 +288,33 @@ def resolve_dpo_config(
         torch_dtype=model_config.get("torch_dtype", "auto"),
         device_map=model_config.get("device_map"),
         quantization=quantization_config,
+        build_summary_path=_resolve_repo_path(
+            resolved_repo_root,
+            pair_generation_config.get("build_summary_path", "data/manifests/support_tickets_dataset_build_summary.json"),
+        ),
+        composition_summary_path=_resolve_repo_path(
+            resolved_repo_root,
+            pair_generation_config.get(
+                "composition_summary_path",
+                "artifacts/metrics/support_tickets_dataset_composition.json",
+            ),
+        ),
+        pair_generation=pair_generation_config,
+        quality_gates=dict(pair_generation_config.get("quality_gates", {})),
         preference_manifest=resolved_preference_manifest,
         eval_preference_manifest=resolved_eval_preference_manifest,
         train_sample_limit=training_config.get("train_sample_limit"),
         eval_sample_limit=training_config.get("eval_sample_limit"),
+        train_sample_percent=training_config.get("train_sample_percent"),
+        eval_sample_percent=training_config.get("eval_sample_percent"),
+        sample_seed=int(training_config.get("sample_seed", 17)),
         training=training_config,
         artifacts=dict(merged.get("artifacts", {})),
-        raw_config=raw_config,
+        raw_config={
+            **raw_config,
+            "_requested_profile_name": requested_profile_name,
+            "_resolved_profile_name": profile_name,
+        },
     )
 
 
@@ -341,18 +377,14 @@ def resolve_dpo_output_paths(
     )
 
 
-def _sample_rows(rows: list[dict[str, Any]], limit: int | None) -> list[dict[str, Any]]:
-    if limit is None:
-        return rows
-    return rows[: int(limit)]
-
-
 def load_dpo_preference_records(
     path: str | Path | None,
     *,
     sample_limit: int | None = None,
+    sample_percent: float | None = None,
+    sample_seed: int = 17,
     required: bool = True,
-) -> list[dict[str, str]]:
+) -> tuple[list[dict[str, str]], SampleSelectionMetadata]:
     """Load prompt/chosen/rejected preference rows for DPO."""
 
     if path is None:
@@ -361,15 +393,23 @@ def load_dpo_preference_records(
                 "DPO training requires a preference manifest. Provide training.preference_manifest "
                 "or pass --preference-manifest."
             )
-        return []
+        empty_metadata = select_rows([], sample_limit=sample_limit, sample_percent=sample_percent, sample_seed=sample_seed).metadata
+        return [], empty_metadata
 
     resolved = Path(path).resolve()
     if not resolved.exists():
         if required:
             raise FileNotFoundError(f"DPO preference manifest does not exist: {resolved}")
-        return []
+        empty_metadata = select_rows([], sample_limit=sample_limit, sample_percent=sample_percent, sample_seed=sample_seed).metadata
+        return [], empty_metadata
 
-    rows = _sample_rows(read_jsonl(resolved), sample_limit)
+    selection = select_rows(
+        read_jsonl(resolved),
+        sample_limit=sample_limit,
+        sample_percent=sample_percent,
+        sample_seed=sample_seed,
+    )
+    rows = selection.rows
     normalized_rows: list[dict[str, str]] = []
     for index, row in enumerate(rows, start=1):
         prompt = str(row.get("prompt", ""))
@@ -380,7 +420,7 @@ def load_dpo_preference_records(
                 f"DPO preference row {index} in {resolved} must include non-empty prompt, chosen, and rejected."
             )
         normalized_rows.append({"prompt": prompt, "chosen": chosen, "rejected": rejected})
-    return normalized_rows
+    return normalized_rows, selection.metadata
 
 
 def _load_training_stack() -> dict[str, Any]:
@@ -425,6 +465,12 @@ def _resolve_compute_dtype(torch_module: Any, value: str | None) -> Any:
     if not hasattr(torch_module, value):
         raise ValueError(f"Unsupported compute dtype: {value}")
     return getattr(torch_module, value)
+
+
+def _effective_batch_size(training: dict[str, Any]) -> int:
+    return int(training.get("per_device_train_batch_size", 1)) * int(
+        training.get("gradient_accumulation_steps", 1)
+    )
 
 
 def _build_quantization_config(config: DPOResolvedConfig, modules: dict[str, Any], compute_dtype: Any) -> Any | None:
@@ -629,11 +675,17 @@ def write_checkpoint_manifest(
     status: str,
     train_record_count: int | None,
     eval_record_count: int | None,
+    subset_selection: dict[str, Any] | None = None,
     history_artifacts: dict[str, Any] | None = None,
     train_metrics: dict[str, Any] | None = None,
 ) -> Path:
     """Persist small checkpoint metadata for the completed DPO run."""
 
+    data_pipeline_metadata = build_data_pipeline_metadata(
+        repo_root=config.config_path.parents[1],
+        build_summary_path=config.build_summary_path,
+        composition_summary_path=config.composition_summary_path,
+    )
     payload = {
         "stage": "dpo",
         "run_name": run_name,
@@ -655,8 +707,20 @@ def write_checkpoint_manifest(
         "eval_preference_manifest": str(config.eval_preference_manifest) if config.eval_preference_manifest else None,
         "train_record_count": train_record_count,
         "eval_record_count": eval_record_count,
+        "subset_selection": subset_selection or {},
+        "effective_batch_size": _effective_batch_size(config.training),
         "quantization": config.quantization,
+        "pair_generation": config.pair_generation,
+        "quality_gates": config.quality_gates,
         "training": config.training,
+        "data_pipeline": data_pipeline_metadata,
+        "final_adapter_metadata": {
+            "adapter_path": str(artifacts.adapter_dir),
+            "source_sft_manifest_path": (
+                str(config.source_sft_manifest_path) if config.source_sft_manifest_path else None
+            ),
+            "reference_strategy": config.reference_strategy,
+        },
         "history_artifacts": history_artifacts or {},
         "train_metrics": train_metrics or {},
     }
@@ -672,6 +736,7 @@ def write_dpo_summary(
     status: str,
     train_record_count: int | None,
     eval_record_count: int | None,
+    subset_selection: dict[str, Any] | None = None,
     history_artifacts: dict[str, Any] | None = None,
     train_metrics: dict[str, Any] | None = None,
 ) -> Path:
@@ -684,6 +749,17 @@ def write_dpo_summary(
         resolved_loss_curve_path = resolved_loss_curve_path or str(artifacts.loss_curve_path)
         resolved_eval_loss_curve_path = resolved_eval_loss_curve_path or str(artifacts.eval_loss_curve_path)
 
+    data_pipeline_metadata = build_data_pipeline_metadata(
+        repo_root=config.config_path.parents[1],
+        build_summary_path=config.build_summary_path,
+        composition_summary_path=config.composition_summary_path,
+    )
+    runtime_summary = {
+        "train_runtime": (train_metrics or {}).get("train_runtime"),
+        "train_samples_per_second": (train_metrics or {}).get("train_samples_per_second"),
+        "train_steps_per_second": (train_metrics or {}).get("train_steps_per_second"),
+        "total_flos": (train_metrics or {}).get("total_flos"),
+    }
     payload = {
         "stage": "dpo",
         "run_name": run_name,
@@ -710,8 +786,21 @@ def write_dpo_summary(
         "eval_preference_manifest": str(config.eval_preference_manifest) if config.eval_preference_manifest else None,
         "train_record_count": train_record_count,
         "eval_record_count": eval_record_count,
+        "subset_selection": subset_selection or {},
+        "effective_batch_size": _effective_batch_size(config.training),
+        "runtime_summary": runtime_summary,
         "quantization": config.quantization,
+        "pair_generation": config.pair_generation,
+        "quality_gates": config.quality_gates,
         "training": config.training,
+        "data_pipeline": data_pipeline_metadata,
+        "final_adapter_metadata": {
+            "adapter_path": str(artifacts.adapter_dir),
+            "reference_strategy": config.reference_strategy,
+            "source_sft_manifest_path": (
+                str(config.source_sft_manifest_path) if config.source_sft_manifest_path else None
+            ),
+        },
         "history_artifacts": history_payload,
         "train_metrics": train_metrics or {},
     }
@@ -750,6 +839,8 @@ def save_training_artifacts(
     context: RuntimeContext,
     train_record_count: int | None,
     eval_record_count: int | None,
+    train_subset_metadata: SampleSelectionMetadata,
+    eval_subset_metadata: SampleSelectionMetadata,
     train_metrics: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], Path, Path]:
     """Persist history JSON, plots, summary, and checkpoint metadata after DPO."""
@@ -765,12 +856,24 @@ def save_training_artifacts(
         eval_loss_curve_path=artifacts.eval_loss_curve_path,
         tracked_scalar_keys=[metric_key for metric_key, _, _ in DPO_REWARD_METRIC_SPECS],
         extra_plot_specs=extra_plot_specs,
+        metadata={
+            "stage": "dpo",
+            "run_name": run_name,
+            "effective_batch_size": _effective_batch_size(config.training),
+            "train_record_count": train_record_count,
+            "eval_record_count": eval_record_count,
+            "subset_selection": {
+                "train": train_subset_metadata.to_dict(),
+                "eval": eval_subset_metadata.to_dict(),
+            },
+        },
         loss_curve_title="DPO Training Loss",
         eval_loss_curve_title="DPO Evaluation Loss",
     )
     merged_metrics = dict(train_metrics or {})
     if hasattr(trainer, "state") and getattr(trainer.state, "best_metric", None) is not None:
         merged_metrics["best_metric"] = trainer.state.best_metric
+    merged_metrics["effective_batch_size"] = _effective_batch_size(config.training)
 
     summary_path = write_dpo_summary(
         context=context,
@@ -780,6 +883,10 @@ def save_training_artifacts(
         status="completed",
         train_record_count=train_record_count,
         eval_record_count=eval_record_count,
+        subset_selection={
+            "train": train_subset_metadata.to_dict(),
+            "eval": eval_subset_metadata.to_dict(),
+        },
         history_artifacts=history_artifacts,
         train_metrics=merged_metrics,
     )
@@ -790,6 +897,10 @@ def save_training_artifacts(
         status="completed",
         train_record_count=train_record_count,
         eval_record_count=eval_record_count,
+        subset_selection={
+            "train": train_subset_metadata.to_dict(),
+            "eval": eval_subset_metadata.to_dict(),
+        },
         history_artifacts=history_artifacts,
         train_metrics=merged_metrics,
     )
@@ -804,6 +915,8 @@ def write_dry_run_artifacts(
     run_name: str,
     train_record_count: int | None,
     eval_record_count: int | None,
+    train_subset_metadata: SampleSelectionMetadata,
+    eval_subset_metadata: SampleSelectionMetadata,
 ) -> tuple[Path, Path]:
     """Persist the resolved DPO run contract without importing the heavy training stack."""
 
@@ -815,8 +928,12 @@ def write_dry_run_artifacts(
         status="dry_run_ready",
         train_record_count=train_record_count,
         eval_record_count=eval_record_count,
+        subset_selection={
+            "train": train_subset_metadata.to_dict(),
+            "eval": eval_subset_metadata.to_dict(),
+        },
         history_artifacts={},
-        train_metrics={},
+        train_metrics={"effective_batch_size": _effective_batch_size(config.training)},
     )
     checkpoint_manifest_path = write_checkpoint_manifest(
         config=config,
@@ -825,8 +942,12 @@ def write_dry_run_artifacts(
         status="dry_run_ready",
         train_record_count=train_record_count,
         eval_record_count=eval_record_count,
+        subset_selection={
+            "train": train_subset_metadata.to_dict(),
+            "eval": eval_subset_metadata.to_dict(),
+        },
         history_artifacts={},
-        train_metrics={},
+        train_metrics={"effective_batch_size": _effective_batch_size(config.training)},
     )
     return summary_path, checkpoint_manifest_path
 
