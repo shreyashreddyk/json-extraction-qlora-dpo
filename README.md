@@ -18,6 +18,44 @@ GPU work. The runtime model treats Colab as disposable compute, Google Drive as
 the durable transport and runtime storage layer, and the local Git repo as the
 source of truth for code, configs, docs, and tracked artifacts.
 
+## Current Problem Definition
+
+The current task is narrow on purpose:
+
+- input: support-ticket style natural language text
+- output: schema-constrained JSON under the `support_ticket_extraction` contract
+- evaluation focus:
+  - syntax quality
+  - schema discipline
+  - semantic field correctness
+  - hallucination control
+
+This repo treats syntax quality and semantic quality as separate signals. A
+stage is not considered "better" just because its JSON looks cleaner.
+
+## Current Results Snapshot
+
+The checked-in saved artifacts currently support this story:
+
+| Stage | JSON Validity | Schema Pass | Micro F1 | Macro F1 | Mean Latency (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline | 0.9998 | 0.9876 | 0.3030 | 0.3008 | 10760.63 |
+| SFT | 0.9990 | 0.8492 | 0.7334 | 0.6519 | 10773.13 |
+| DPO | 0.9984 | 0.9982 | 0.7730 | 0.6871 | 16000.42 |
+
+Interpretation:
+
+- Baseline: very strong surface formatting, weak task understanding
+- SFT: the main semantic improvement stage
+- DPO: strong schema-discipline repair plus a smaller semantic gain over SFT,
+  with slower inference and some row-level regressions
+
+This is the main honest headline for the repo today:
+
+1. SFT produced the big semantic jump.
+2. DPO helped most with schema discipline and selective semantic cleanup.
+3. DPO is not a blanket win on every row.
+
 ## Intended Workflow
 
 ### Phase 0: Project framing
@@ -48,6 +86,65 @@ source of truth for code, configs, docs, and tracked artifacts.
 - Serve the resulting model through vLLM.
 - Benchmark latency and throughput on representative prompts.
 - Optionally export an Ollama packaging path for local demos.
+
+## Final Review Artifacts
+
+The repo now has one final reporting layer that should be the primary review
+path for a recruiter, hiring manager, or future-you coming back to the project.
+
+Read these in order:
+
+1. [`artifacts/reports/final_project_report.md`](artifacts/reports/final_project_report.md)
+2. [`notebooks/06_final_report.ipynb`](notebooks/06_final_report.ipynb)
+3. [`artifacts/reports/dpo-full-colab_comparison_comparison_report.md`](artifacts/reports/dpo-full-colab_comparison_comparison_report.md)
+4. [`artifacts/reports/support_tickets_dataset_composition.md`](artifacts/reports/support_tickets_dataset_composition.md)
+
+The final notebook and markdown report are designed to answer:
+
+- why the original baseline underperformed semantically
+- how the data got better
+- what changed in SFT
+- what changed in DPO
+- what improved
+- what did not improve
+- which failures stayed hard
+
+Key artifact locations:
+
+- dataset composition:
+  - `artifacts/metrics/support_tickets_dataset_composition.json`
+  - `artifacts/reports/support_tickets_dataset_composition.md`
+- baseline report:
+  - `artifacts/metrics/baseline-qwen2.5-1.5b_metrics.json`
+  - `artifacts/reports/baseline-qwen2.5-1.5b_report.md`
+- SFT eval and training artifacts:
+  - `artifacts/metrics/sft-full-colab_eval_metrics.json`
+  - `artifacts/metrics/sft-full-colab_sft_summary.json`
+  - `artifacts/metrics/sft-full-colab_sft_history.json`
+  - `artifacts/plots/sft-full-colab_*`
+- DPO eval and training artifacts:
+  - `artifacts/metrics/dpo-full-colab_eval_metrics.json`
+  - `artifacts/metrics/dpo-full-colab_dpo_summary.json`
+  - `artifacts/metrics/dpo-full-colab_dpo_history.json`
+  - `artifacts/plots/dpo-full-colab_*`
+- consolidated comparison:
+  - `artifacts/metrics/dpo-full-colab_comparison_comparison_summary.json`
+  - `artifacts/reports/dpo-full-colab_comparison_comparison_report.md`
+
+## What The Final Notebook Shows
+
+[`notebooks/06_final_report.ipynb`](notebooks/06_final_report.ipynb) is the
+project's portfolio-grade walkthrough. It:
+
+- loads saved dataset summaries instead of recomputing them
+- loads saved baseline, SFT, and DPO metrics
+- loads saved comparison and row-level artifacts when available
+- renders richer tables and matplotlib plots
+- surfaces case studies when cross-stage prediction files are available
+- exports the GitHub-readable markdown report
+
+The notebook is intentionally read-mostly. It should never trigger retraining
+or model inference.
 
 ## Repository Layout
 
@@ -156,6 +253,10 @@ The registry-driven data build now generates:
 Open [`notebooks/00_data_audit.ipynb`](notebooks/00_data_audit.ipynb) to inspect
 the schema, source composition, null behavior, and example exports.
 
+When the staged artifacts already exist, use
+[`notebooks/06_final_report.ipynb`](notebooks/06_final_report.ipynb) for the
+final narrative rather than scanning raw JSON files by hand.
+
 ## Design Principles
 
 - Keep notebooks thin and push reusable logic into `src/`.
@@ -206,6 +307,31 @@ The practical separation of concerns is:
 5. pull final artifacts back into the repo
 
 This keeps the system disciplined even though the compute layer is Colab-native.
+
+## Current DPO Status
+
+The saved artifact trail supports a careful conclusion:
+
+- DPO helped this project
+- but not in the naive "everything improved" sense
+
+What the current saved results suggest:
+
+- DPO substantially repaired the SFT schema-validation regression
+- DPO improved aggregate micro and macro F1 over SFT
+- DPO increased latency materially
+- DPO still produced some row-level regressions, so it should be described as a
+  useful second-stage optimization pass, not a guaranteed improvement layer
+
+That is exactly the kind of honest tradeoff this repo is meant to show.
+
+## Next Step
+
+The next lab for this repository is serving and benchmarking:
+
+- serve the best current checkpoint with vLLM first
+- benchmark latency and throughput under the same task contract
+- compare quality versus serving cost before packaging an optional Ollama demo
 
 ## Standard Commands
 
