@@ -1,41 +1,55 @@
 # JSON Extraction with QLoRA + DPO
 
-Production-style scaffold for a schema-constrained JSON extraction project.
-The repository is designed as both a portfolio artifact and a learning trail for
-modern post-training workflows on a narrow structured-output task.
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
+[![Project Type](https://img.shields.io/badge/Project-LLMOps%20Portfolio-6f42c1)](#)
+[![Task](https://img.shields.io/badge/Task-Structured%20JSON%20Extraction-0a7ea4)](#)
+[![Training](https://img.shields.io/badge/Post--Training-SFT%20%2B%20DPO-green)](#)
+[![Serving](https://img.shields.io/badge/Serving-vLLM-orange)](#)
 
-## Project Goal
+Production-style LLM post-training project for **schema-constrained support-ticket
+JSON extraction**.  
+This repo demonstrates an end-to-end workflow across **baseline -> SFT (QLoRA) -> DPO -> inference benchmarking** with explicit metrics, failure analysis, and reproducibility contracts.
 
-Build a measurable fine-tuning workflow for extracting schema-valid JSON from
-natural language inputs and comparing three stages honestly:
+---
 
-1. Baseline untuned model evaluation
-2. Supervised fine-tuning with LoRA or QLoRA
-3. Preference tuning with DPO on the same schema contract
+## TL;DR
 
-This repository now includes a Colab-native execution layer for notebook-driven
-GPU work. The runtime model treats Colab as disposable compute, Google Drive as
-the durable transport and runtime storage layer, and the local Git repo as the
-source of truth for code, configs, docs, and tracked artifacts.
+- Built and evaluated a narrow extraction system with strict schema validation.
+- Achieved major semantic lift from baseline to SFT, then additional semantic +
+  schema gains from DPO.
+- Kept claims honest by separating syntax quality from semantic correctness.
+- Implemented script-first, resumable vLLM benchmarking with correctness checks.
+- Documented engineering decisions, tradeoffs, and open risks as first-class artifacts.
 
-## Current Problem Definition
+---
 
-The current task is narrow on purpose:
+## Start Here
 
-- input: support-ticket style natural language text
-- output: schema-constrained JSON under the `support_ticket_extraction` contract
-- evaluation focus:
-  - syntax quality
-  - schema discipline
-  - semantic field correctness
-  - hallucination control
+- Final project narrative: [`artifacts/reports/final_project_report.md`](artifacts/reports/final_project_report.md)
+- Stage comparison report: [`artifacts/reports/dpo-full-colab_comparison_comparison_report.md`](artifacts/reports/dpo-full-colab_comparison_comparison_report.md)
+- Inference benchmark notebook: [`notebooks/07_vllm_benchmark_lab.ipynb`](notebooks/07_vllm_benchmark_lab.ipynb)
+- System design: [`docs/01_system_design.md`](docs/01_system_design.md)
+- Evaluation contract: [`docs/04_eval_plan.md`](docs/04_eval_plan.md)
 
-This repo treats syntax quality and semantic quality as separate signals. A
-stage is not considered "better" just because its JSON looks cleaner.
+---
 
-## Current Results Snapshot
+## Why This Project Matters
 
-The checked-in saved artifacts currently support this story:
+Most fine-tuning demos optimize for one final score and skip system rigor.  
+This repo is intentionally different:
+
+- narrow task definition
+- strict schema contract
+- reproducible stage artifacts
+- explicit failure cases
+- honest tradeoff reporting
+
+It is designed to show practical ML engineering skills recruiters look for:
+**LLMOps, PEFT, QLoRA, DPO, evaluation harness design, serving benchmarking, and artifact-first reproducibility**.
+
+---
+
+## Key Outcomes (Saved Artifacts)
 
 | Stage | JSON Validity | Schema Pass | Micro F1 | Macro F1 | Mean Latency (ms) |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -44,127 +58,147 @@ The checked-in saved artifacts currently support this story:
 | DPO | 0.9984 | 0.9982 | 0.7730 | 0.6871 | 16000.42 |
 
 Interpretation:
+- **Baseline -> SFT:** primary semantic jump.
+- **SFT -> DPO:** schema discipline repair + additional semantic gain.
+- **Cost of DPO:** materially higher latency.
 
-- Baseline: very strong surface formatting, weak task understanding
-- SFT: the main semantic improvement stage
-- DPO: strong schema-discipline repair plus a smaller semantic gain over SFT,
-  with slower inference and some row-level regressions
+This is a mixed, realistic result, not a blanket "everything improved" claim.
 
-This is the main honest headline for the repo today:
+Source metrics:
+- `artifacts/metrics/baseline-qwen2.5-1.5b_metrics.json`
+- `artifacts/metrics/sft-full-colab_eval_metrics.json`
+- `artifacts/metrics/dpo-full-colab_eval_metrics.json`
 
-1. SFT produced the big semantic jump.
-2. DPO helped most with schema discipline and selective semantic cleanup.
-3. DPO is not a blanket win on every row.
+---
 
-## Intended Workflow
+## Architecture (High-Level)
 
-### Phase 0: Project framing
+```mermaid
+flowchart TD
+  RawSources[Raw Sources and Fixtures] --> DataBuild[Data Build and Canonicalization]
+  DataBuild --> Manifests[Train and Eval Manifests]
+  Manifests --> BaselineEval[Baseline Evaluation]
+  Manifests --> SFTTrain[SFT QLoRA Training]
+  SFTTrain --> PrefBuild[Preference Pair Build]
+  PrefBuild --> DPOTrain[DPO Training]
+  BaselineEval --> Compare[Stage Comparison]
+  SFTTrain --> Compare
+  DPOTrain --> Compare
+  DPOTrain --> Promote[Promoted Model Manifest]
+  Promote --> VLLMServe[vLLM Serving and Benchmark]
+  VLLMServe --> InferenceReport[Inference Benchmark Notebook]
+  Compare --> FinalReport[Final Report Notebook and Markdown]
+```
 
-- Define the schema contract, prompt format, and evaluation contract.
-- Record assumptions, tradeoffs, and open questions in `docs/`.
+Core principle: keep execution logic in `src/` and `scripts/`, keep notebooks
+as analysis/reporting surfaces.
 
-### Phase 1: Baseline evaluation
+---
 
-- Prepare a held-out evaluation slice for schema-constrained extraction.
-- Measure JSON validity, schema pass rate, field correctness, hallucination
-  rate, and latency for the untuned model.
+## Tech Stack And Keywords
 
-### Phase 2: SFT with LoRA or QLoRA
+- **Language/Runtime:** Python 3.11+
+- **Modeling:** Transformers, TRL, PEFT, bitsandbytes (QLoRA)
+- **Training:** SFTTrainer, DPOTrainer
+- **Validation:** Pydantic schema contracts
+- **Serving:** vLLM (OpenAI-compatible API, LoRA serving)
+- **Evaluation:** deterministic metrics + diagnostics + stage comparison
+- **Workflow:** Colab runtime + Drive persistence + local Git source of truth
 
-- Prepare instruction-style training examples aligned to the same schema.
-- Train a compact open model with parameter-efficient fine-tuning.
-- Compare baseline vs SFT on the same held-out evaluation contract.
+Keywords: `LLMOps`, `SFT`, `DPO`, `QLoRA`, `LoRA`, `vLLM`, `Pydantic`,
+`artifact-first reproducibility`, `evaluation harness`, `failure analysis`.
 
-### Phase 3: Preference data and DPO
+---
 
-- Curate or generate chosen vs rejected outputs for the same task.
-- Train a DPO stage on top of the SFT checkpoint or adapter.
-- Compare baseline vs SFT vs DPO with aggregate metrics and failure examples.
+## AI Engineer Role Alignment
 
-### Phase 4: Inference and benchmarking
+This project is intentionally scoped to demonstrate responsibilities commonly
+expected in AI Engineer roles:
 
-- Serve the resulting model through vLLM.
-- Benchmark latency and throughput on representative prompts.
-- Optionally export an Ollama packaging path for local demos.
+### 1) Data And Contract Engineering
 
-## Final Review Artifacts
+- designed a strict schema-first extraction contract
+- built canonical data pipelines with source adapters and provenance tracking
+- implemented deterministic data-build checks before expensive model runs
 
-The repo now has one final reporting layer that should be the primary review
-path for a recruiter, hiring manager, or future-you coming back to the project.
+### 2) Post-Training And Model Iteration
 
-Read these in order:
+- implemented staged baseline -> SFT -> DPO workflow
+- added preference quality gates to avoid low-signal DPO training
+- preserved explicit stage-level artifacts for reproducible comparisons
 
-1. [`artifacts/reports/final_project_report.md`](artifacts/reports/final_project_report.md)
-2. [`notebooks/06_final_report.ipynb`](notebooks/06_final_report.ipynb)
-3. [`artifacts/reports/dpo-full-colab_comparison_comparison_report.md`](artifacts/reports/dpo-full-colab_comparison_comparison_report.md)
-4. [`artifacts/reports/support_tickets_dataset_composition.md`](artifacts/reports/support_tickets_dataset_composition.md)
+### 3) Evaluation And Reliability
 
-The final notebook and markdown report are designed to answer:
+- built evaluation harness with syntax + semantic separation
+- tracked diagnostics, hallucination behavior, and field-level correctness
+- documented mixed outcomes and regressions, not just improvements
 
-- why the original baseline underperformed semantically
-- how the data got better
-- what changed in SFT
-- what changed in DPO
-- what improved
-- what did not improve
-- which failures stayed hard
+### 4) Inference And Serving
 
-Key artifact locations:
+- integrated vLLM serving with target resolution and LoRA support
+- built workload-aware benchmark orchestration with config sweeps
+- added resume-safe benchmark checkpointing for real Colab runtime constraints
 
-- dataset composition:
-  - `artifacts/metrics/support_tickets_dataset_composition.json`
-  - `artifacts/reports/support_tickets_dataset_composition.md`
-- baseline report:
-  - `artifacts/metrics/baseline-qwen2.5-1.5b_metrics.json`
-  - `artifacts/reports/baseline-qwen2.5-1.5b_report.md`
-- SFT eval and training artifacts:
-  - `artifacts/metrics/sft-full-colab_eval_metrics.json`
-  - `artifacts/metrics/sft-full-colab_sft_summary.json`
-  - `artifacts/metrics/sft-full-colab_sft_history.json`
-  - `artifacts/plots/sft-full-colab_*`
-- DPO eval and training artifacts:
-  - `artifacts/metrics/dpo-full-colab_eval_metrics.json`
-  - `artifacts/metrics/dpo-full-colab_dpo_summary.json`
-  - `artifacts/metrics/dpo-full-colab_dpo_history.json`
-  - `artifacts/plots/dpo-full-colab_*`
-- consolidated comparison:
-  - `artifacts/metrics/dpo-full-colab_comparison_comparison_summary.json`
-  - `artifacts/reports/dpo-full-colab_comparison_comparison_report.md`
+### 5) Production-Oriented Engineering Habits
 
-## What The Final Notebook Shows
+- clear separation of source-of-truth repo vs runtime artifacts
+- script-first workflows over notebook-only logic
+- docs as first-class engineering output (decision log, failure cases, eval plan)
 
-[`notebooks/06_final_report.ipynb`](notebooks/06_final_report.ipynb) is the
-project's portfolio-grade walkthrough. It:
+---
 
-- loads saved dataset summaries instead of recomputing them
-- loads saved baseline, SFT, and DPO metrics
-- loads saved comparison and row-level artifacts when available
-- renders richer tables and matplotlib plots
-- surfaces case studies when cross-stage prediction files are available
-- exports the GitHub-readable markdown report
+## Skills Demonstrated (Recruiter View)
 
-The notebook is intentionally read-mostly. It should never trigger retraining
-or model inference.
+- **LLM fine-tuning:** QLoRA/SFT + DPO pipelines using TRL/PEFT
+- **Model evaluation:** robust metric design, diagnostics, and evidence-backed reporting
+- **Structured outputs:** schema-constrained JSON extraction and strict validation
+- **Inference engineering:** vLLM serving, latency/throughput analysis, tail behavior interpretation
+- **System design:** reproducible runtime architecture with explicit contracts
+- **Reliability mindset:** checkpoint-resume mechanisms, fail-fast fingerprinting
+- **Communication:** decision rationale, tradeoff documentation, failure analysis
+
+---
+
+## If You Are Hiring For AI Engineer
+
+Use this repo to evaluate candidate strength in:
+
+- turning ambiguous ML goals into explicit system contracts
+- building trustworthy model-improvement evidence rather than one-off scores
+- balancing quality gains against latency and operational constraints
+- designing for reproducibility in imperfect runtime environments (for example, Colab)
+- communicating technical decisions in a way cross-functional teams can trust
+
+Recommended review flow:
+
+1. start with this README outcomes and architecture
+2. verify stage metrics in `artifacts/metrics/`
+3. inspect comparison/failure narratives in `artifacts/reports/` and `docs/`
+4. review benchmark methodology in `scripts/benchmark_vllm.py` and
+   `notebooks/07_vllm_benchmark_lab.ipynb`
+
+---
 
 ## Repository Layout
 
 ```text
 json-extraction-qlora-dpo/
-├── configs/              # Placeholder YAML configs for model, SFT, DPO, eval, inference
-├── scripts/              # Thin CLIs that orchestrate reusable code in src/
-├── src/json_ft/          # Reusable Python package for schemas, prompts, metrics, inference
-├── tests/                # Small deterministic tests for scaffolded helpers
-├── notebooks/            # Colab-oriented control notebooks, no hidden business logic
-├── data/                 # Manifests, fixtures, interim data, evaluation subsets
-├── artifacts/            # Metrics, plots, reports, checkpoint metadata
-├── docs/                 # Local learning notes and project documents
-├── pyproject.toml        # Package metadata and dependency groups
-└── Makefile              # Small developer workflows
+├── configs/               # Data, train, eval, and inference contracts
+├── scripts/               # CLI entrypoints for pipeline stages
+├── src/json_ft/           # Reusable package modules
+├── tests/                 # Deterministic test coverage
+├── notebooks/             # Orchestration/review notebooks
+├── data/                  # Manifests + fixtures
+├── artifacts/             # Saved small metrics/plots/reports/checkpoint metadata
+├── docs/                  # Decision, eval, failure, learning trail
+└── Makefile               # Local and Drive sync workflow helpers
 ```
 
-## Quickstart
+---
 
-### 1. Local development environment
+## Reproducibility Workflow
+
+### 1) Local development
 
 ```bash
 python3 -m venv .venv
@@ -173,381 +207,69 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
-Use the local environment for:
-
-- editing code
-- running fast tests and compile checks
-- reviewing generated small artifacts before commit
-
-### 2. Google Drive source + Colab runtime
-
-The final Colab workflow uses two Google Drive folders:
-
-- `json-ft-source`: mirrored execution copy of the repo subset needed by Colab
-- `json-ft-runs`: persistent runtime outputs such as metrics, reports, logs,
-  checkpoints, and scratch data
-
-The default local Drive desktop root for this repo is:
-
-```text
-/Users/shreyashreddy/Library/CloudStorage/GoogleDrive-kshreyashreddy@gmail.com/My Drive
-```
-
-Initialize those folders locally:
+### 2) Drive-backed Colab flow
 
 ```bash
 make drive-init
-```
-
-For a clean-slate rewrite of both Drive folders:
-
-```bash
-make drive-rewrite-colab
-```
-
-Or preview and push the execution subset into Drive without resetting runtime
-data:
-
-```bash
-make drive-push-source-dry-run
 make drive-push-source
 ```
 
-Then from a Colab notebook connected to the runtime:
+Then in Colab:
+1. run `notebooks/00_colab_setup.ipynb`
+2. build manifests (`scripts/build_dataset_manifests.py --profile full`)
+3. run stage notebooks/scripts (baseline, SFT, preference, DPO, compare)
+4. run benchmark (`scripts/benchmark_vllm.py`)
 
-1. Run [`notebooks/00_colab_setup.ipynb`](notebooks/00_colab_setup.ipynb).
-2. Build the task manifests in Colab with `scripts/build_dataset_manifests.py --profile full`.
-3. Run the phase notebook you need for baseline eval, SFT, preference generation, DPO, or vLLM benchmarking.
-
-The setup notebook will:
-
-- mount Google Drive
-- verify the mirrored Drive source tree
-- recreate any missing runtime or artifact mirror directories
-- install pinned `requirements-colab.txt` from `json-ft-source`
-- resolve `SOURCE_ROOT=/content/drive/MyDrive/json-ft-source`
-- resolve `RUNTIME_ROOT=/content/drive/MyDrive/json-ft-runs`
-- print resolved runtime paths
-
-### 3. Inspect the repo and data contract
+Pull small artifacts back:
 
 ```bash
-make tree
-make validate-scaffold
-./.venv/bin/python scripts/build_dataset_manifests.py --profile dev
-```
-
-### 4. Review the generated artifacts
-
-The registry-driven data build now generates:
-
-- `data/manifests/support_tickets_canonical.jsonl`
-- `data/manifests/support_tickets_sft_prompt_completion.jsonl`
-- `data/manifests/support_tickets_sft_messages.jsonl`
-- `data/manifests/support_tickets_eval_manifest.jsonl`
-- `data/manifests/support_tickets_dataset_build_summary.json`
-- `artifacts/metrics/support_tickets_dataset_composition.json`
-- `artifacts/reports/support_tickets_dataset_composition.csv`
-- `artifacts/reports/support_tickets_dataset_composition.md`
-
-Open [`notebooks/00_data_audit.ipynb`](notebooks/00_data_audit.ipynb) to inspect
-the schema, source composition, null behavior, and example exports.
-
-When the staged artifacts already exist, use
-[`notebooks/06_final_report.ipynb`](notebooks/06_final_report.ipynb) for the
-final narrative rather than scanning raw JSON files by hand.
-
-## Design Principles
-
-- Keep notebooks thin and push reusable logic into `src/`.
-- Preserve clear boundaries between data prep, training, evaluation, and inference.
-- Prefer explicit, readable modules over hidden framework abstractions.
-- Treat documentation as part of the system, not an afterthought.
-- Do not claim improvements without saved metrics and before/after comparisons.
-
-## Local vs Colab Workflow
-
-The recommended operating model is:
-
-1. edit code locally in VS Code
-2. validate locally with fast non-GPU checks
-3. mirror the execution subset into `json-ft-source` with `make drive-push-source`
-4. run Colab notebooks directly from the Drive-backed source tree
-5. build `data_build:full` in Colab for the real training corpus
-6. persist runtime outputs in `json-ft-runs`
-7. pull mirrored small artifacts back into the repo with `make drive-pull-artifacts`
-
-This repository intentionally separates:
-
-- `git repo`: source of truth for code, configs, docs, manifests, and reviewed small artifacts
-- `json-ft-source`: mirrored execution copy for Colab, refreshed intentionally from the repo
-- `json-ft-runs`: persistent runtime outputs outside Git
-
-## Why This Is Production-Grade With Colab
-
-Using Colab as the available GPU resource does not lower the engineering bar.
-The workflow remains production-oriented because:
-
-- Colab is treated as a disposable execution plane, not the source of truth.
-- The repo remains the controlled system of record.
-- Drive is used only as a durable transport and runtime storage layer.
-- Colab dependencies are pinned and aligned to the shared runtime image so setup stays reproducible without extra environment management.
-- Notebooks stay thin and orchestration-only.
-- Reusable logic remains in `src/` and `scripts/`.
-- Config-driven execution and deterministic artifact paths preserve reproducibility.
-- Outputs are saved as metrics and reports that can be reviewed, versioned, and compared.
-- Baseline, SFT, and DPO stages stay aligned to one schema and eval contract.
-
-The practical separation of concerns is:
-
-1. author locally
-2. sync source intentionally
-3. run on ephemeral GPU
-4. persist outputs durably
-5. pull final artifacts back into the repo
-
-This keeps the system disciplined even though the compute layer is Colab-native.
-
-## Current DPO Status
-
-The saved artifact trail supports a careful conclusion:
-
-- DPO helped this project
-- but not in the naive "everything improved" sense
-
-What the current saved results suggest:
-
-- DPO substantially repaired the SFT schema-validation regression
-- DPO improved aggregate micro and macro F1 over SFT
-- DPO increased latency materially
-- DPO still produced some row-level regressions, so it should be described as a
-  useful second-stage optimization pass, not a guaranteed improvement layer
-
-That is exactly the kind of honest tradeoff this repo is meant to show.
-
-## Inference Lab
-
-The repository now includes a script-first vLLM serving and benchmarking layer
-that is adapted to this fine-tuned extraction task rather than copied from a
-generic serving benchmark.
-
-What is intentionally different from the reference `vllm-serving-performance-lab`:
-
-- workloads are built from this repo's held-out extraction manifests
-- requests preserve the repo's `[system, user]` extraction contract
-- prompt buckets are defined from this task's own rendered prompt lengths
-- benchmark-only stress variants extend real extraction rows instead of swapping
-  in a different public dataset
-- correctness spot checks stay attached to performance summaries
-- the final analysis surface is
-  `notebooks/07_vllm_benchmark_lab.ipynb`, which reads saved artifacts rather
-  than reimplementing benchmark logic inside the notebook
-
-## Standard Commands
-
-Local machine:
-
-```bash
-make drive-init
-make drive-rewrite-colab
-make drive-push-source-dry-run
-make drive-push-source
 make drive-pull-artifacts
 ```
 
-Colab setup:
+---
 
-```python
-from google.colab import drive
-drive.mount("/content/drive")
-```
+## Inference Benchmarking
 
-```python
-from pathlib import Path
-import sys
+Inference workflow is script-first and resumable:
 
-SOURCE_ROOT = Path("/content/drive/MyDrive/json-ft-source")
-RUNTIME_ROOT = Path("/content/drive/MyDrive/json-ft-runs")
-sys.path.insert(0, str(SOURCE_ROOT / "src"))
-```
+- promptset generation:
+  - `scripts/build_benchmark_promptsets.py`
+- health checks:
+  - `scripts/check_vllm_health.py`
+- benchmark orchestration:
+  - `scripts/benchmark_vllm.py`
+- report rendering:
+  - `scripts/render_benchmark_report.py`
 
-```bash
-python -m pip install --upgrade pip
-python -m pip install -r /content/drive/MyDrive/json-ft-source/requirements-colab.txt
-```
+Primary analysis surface:
+- `notebooks/07_vllm_benchmark_lab.ipynb`
 
-Baseline evaluation:
+Benchmark run bundle lives in runtime storage:
+- `json-ft-runs/persistent/benchmark/<run_name>/bundle.json`
 
-```bash
-python /content/drive/MyDrive/json-ft-source/scripts/eval_model.py \
-  --config /content/drive/MyDrive/json-ft-source/configs/eval.yaml \
-  --stage-label baseline \
-  --run-name baseline-qwen2.5-1.5b \
-  --runtime-root /content/drive/MyDrive/json-ft-runs \
-  --dataset-path /content/drive/MyDrive/json-ft-source/data/manifests/support_tickets_eval_manifest.jsonl \
-  --mirror-metrics-to-repo \
-  --mirror-report-to-repo \
-  --mirror-predictions-to-repo
-```
+---
 
-Dataset build:
+## Quality And Honesty Policy
 
-```bash
-python /content/drive/MyDrive/json-ft-source/scripts/build_dataset_manifests.py \
-  --registry-config /content/drive/MyDrive/json-ft-source/configs/data_sources.yaml \
-  --build-config /content/drive/MyDrive/json-ft-source/configs/data_build.yaml \
-  --profile full \
-  --raw-root /content/drive/MyDrive/json-ft-runs/raw-data
-```
+- Never claim improvement without saved metrics.
+- Keep syntax and semantic gains separate.
+- Treat row-level failures as first-class evidence, not exceptions.
+- Report latency costs along with quality gains.
+- Preserve reproducibility with explicit paths, contracts, and artifacts.
 
-Promptset build:
+---
 
-```bash
-python /content/drive/MyDrive/json-ft-source/scripts/build_benchmark_promptsets.py \
-  --config /content/drive/MyDrive/json-ft-source/configs/inference.yaml \
-  --run-name vllm-benchmark-lab \
-  --runtime-root /content/drive/MyDrive/json-ft-runs
-```
+## Ownership
 
-Benchmark run:
+This is a solo portfolio project built as both:
+- a practical ML systems artifact
+- a learning trail with explicit design rationale and postmortems
 
-```bash
-python /content/drive/MyDrive/json-ft-source/scripts/benchmark_vllm.py \
-  --config /content/drive/MyDrive/json-ft-source/configs/inference.yaml \
-  --run-name vllm-benchmark-lab \
-  --runtime-root /content/drive/MyDrive/json-ft-runs \
-  --mirror-summary-to-repo \
-  --mirror-report-to-repo
-```
+---
 
-The benchmark runner is resumable by run name. It checkpoints step state under
-`/content/drive/MyDrive/json-ft-runs/persistent/benchmark/<run_name>/checkpoints/`
-and resumes from the next incomplete step when the fingerprint matches the
-current config and target. If the run name is reused with a different target or
-config fingerprint, it fails fast instead of mixing state.
+## What Is Intentionally Not Included
 
-Render report from a saved bundle:
+- Committed large model weights/checkpoints
+- Full raw external datasets in Git
+- Inflated claims without artifact proof
 
-```bash
-python /content/drive/MyDrive/json-ft-source/scripts/render_benchmark_report.py \
-  --bundle-path /content/drive/MyDrive/json-ft-runs/persistent/benchmark/vllm-benchmark-lab/bundle.json
-```
-
-## Exact Staged Workflow
-
-The intended production-style sequence is now:
-
-1. Rewrite or initialize the Drive folders with `make drive-rewrite-colab` or
-   `make drive-init`.
-2. Sync the latest source tree with `make drive-push-source`.
-3. Run `notebooks/00_colab_setup.ipynb`.
-4. Build the task manifests with
-   `scripts/build_dataset_manifests.py --profile full --raw-root /content/drive/MyDrive/json-ft-runs/raw-data`.
-5. Run `notebooks/01_baseline_eval.ipynb` to produce the baseline metrics,
-   report, and prediction artifact under `json-ft-source/artifacts/`.
-6. Run `notebooks/02_sft_review.ipynb` to train the SFT adapter and mirror the
-   SFT summary, checkpoint manifest, and plots back into
-   `json-ft-source/artifacts/`.
-7. Run `notebooks/03_preference_pair_audit.ipynb` to build and review the DPO
-   pair dataset under `json-ft-runs/persistent/preferences/<run_name>/`.
-8. Run `notebooks/04_dpo_review.ipynb` to:
-   - train the DPO adapter
-   - inspect DPO loss and reward traces
-   - evaluate SFT and DPO on the held-out manifest
-   - build a consolidated baseline vs SFT vs DPO comparison report
-9. Run `scripts/build_benchmark_promptsets.py` to build deterministic natural
-   and stress promptsets from the held-out eval manifest.
-10. Run `scripts/benchmark_vllm.py` to:
-   - resolve the promoted target from `artifacts/checkpoints/latest_model.json`
-   - serve the model through the local vLLM OpenAI-compatible server
-   - run smoke, mixed-workload, and config-comparison experiments
-   - checkpoint each workload step under
-     `json-ft-runs/persistent/benchmark/<run_name>/checkpoints/`
-   - save raw logs, summary CSVs, correctness summaries, plots, and a markdown
-     report under `json-ft-runs/persistent/benchmark/<run_name>/`
-11. Open `notebooks/07_vllm_benchmark_lab.ipynb` as the final inference review
-   notebook. It reads the saved benchmark bundle and becomes the single
-   analysis surface for inference latency, throughput, prompt-length
-   interference, correctness tradeoffs, and partial-resume state when a run is
-   interrupted before the final bundle is written.
-12. Pull the mirrored small artifacts back into the local repo with
-   `make drive-pull-artifacts`.
-
-### DPO training command
-
-`notebooks/04_dpo_review.ipynb` now embeds the authoritative DPO command. It
-uses:
-
-- `scripts/train_dpo.py`
-- `configs/dpo.yaml`
-- the generated preference-pair JSONL
-- the explicit SFT checkpoint manifest
-- repo-mirroring flags for metrics, plots, and checkpoint metadata
-
-### Three-stage comparison contract
-
-The consolidated comparison is built from saved stage artifacts, not notebook
-memory:
-
-- baseline metrics + predictions
-- SFT eval metrics + predictions
-- DPO eval metrics + predictions
-
-`scripts/compare_stages.py` produces:
-
-- `<run_name>_comparison_summary.json`
-- `<run_name>_comparison_report.md`
-
-The report keeps these layers separate:
-
-- syntax gains:
-  - JSON validity
-  - schema pass rate
-  - hallucinated-field rate
-  - parse recovery rate
-- semantic gains:
-  - categorical exact-match fields
-  - field-level micro F1
-  - field-level macro F1
-- latency
-
-It also includes row-level evidence for:
-
-- cases where DPO helps semantically
-- cases where DPO mostly helps syntax
-- cases where DPO hurts relative to SFT
-
-The final promoted model is tracked through
-[`artifacts/checkpoints/latest_model.json`](artifacts/checkpoints/latest_model.json).
-That manifest points to the promoted adapter or merged export path outside Git.
-
-## Current Status
-
-This repository currently provides:
-
-- a production-style Python package layout
-- a strict support-ticket extraction schema implemented with Pydantic
-- a registry-driven multi-source data build layer with provenance-aware
-  canonical manifests
-- validated dataset adapters for canonical, prompt-completion, conversational,
-  Nemotron-style, and eval manifest formats
-- script entrypoints for dataset build, SFT, eval, preference generation, DPO,
-  and comparison reporting
-- generated canonical, SFT, eval, and composition artifacts under
-  `data/manifests/` and `artifacts/`
-- Colab runtime helpers for path resolution and latest-model tracking
-- a Colab-native vLLM serving and benchmarking stack with promptset building,
-  health checks, server-config sweeps, correctness spot checks, and report
-  rendering
-- runnable SFT and DPO training CLIs with dry-run validation
-- Colab-oriented notebooks for setup, data audit, baseline review, SFT review,
-  preference auditing, DPO review, and final inference analysis
-- consolidated three-stage comparison reporting across baseline, SFT, and DPO
-- local documentation for the data contract and evaluation plan
-- deterministic tests for schema validation, formatting, preference building,
-  eval reporting, DPO training, and CLI smoke paths
-
-It intentionally does not yet provide:
-
-- a real external raw-data integration
-- committed benchmark results
