@@ -325,13 +325,23 @@ What the current saved results suggest:
 
 That is exactly the kind of honest tradeoff this repo is meant to show.
 
-## Next Step
+## Inference Lab
 
-The next lab for this repository is serving and benchmarking:
+The repository now includes a script-first vLLM serving and benchmarking layer
+that is adapted to this fine-tuned extraction task rather than copied from a
+generic serving benchmark.
 
-- serve the best current checkpoint with vLLM first
-- benchmark latency and throughput under the same task contract
-- compare quality versus serving cost before packaging an optional Ollama demo
+What is intentionally different from the reference `vllm-serving-performance-lab`:
+
+- workloads are built from this repo's held-out extraction manifests
+- requests preserve the repo's `[system, user]` extraction contract
+- prompt buckets are defined from this task's own rendered prompt lengths
+- benchmark-only stress variants extend real extraction rows instead of swapping
+  in a different public dataset
+- correctness spot checks stay attached to performance summaries
+- the final analysis surface is
+  `notebooks/07_vllm_benchmark_lab.ipynb`, which reads saved artifacts rather
+  than reimplementing benchmark logic inside the notebook
 
 ## Standard Commands
 
@@ -390,6 +400,39 @@ python /content/drive/MyDrive/json-ft-source/scripts/build_dataset_manifests.py 
   --raw-root /content/drive/MyDrive/json-ft-runs/raw-data
 ```
 
+Promptset build:
+
+```bash
+python /content/drive/MyDrive/json-ft-source/scripts/build_benchmark_promptsets.py \
+  --config /content/drive/MyDrive/json-ft-source/configs/inference.yaml \
+  --run-name vllm-benchmark-lab \
+  --runtime-root /content/drive/MyDrive/json-ft-runs
+```
+
+Benchmark run:
+
+```bash
+python /content/drive/MyDrive/json-ft-source/scripts/benchmark_vllm.py \
+  --config /content/drive/MyDrive/json-ft-source/configs/inference.yaml \
+  --run-name vllm-benchmark-lab \
+  --runtime-root /content/drive/MyDrive/json-ft-runs \
+  --mirror-summary-to-repo \
+  --mirror-report-to-repo
+```
+
+The benchmark runner is resumable by run name. It checkpoints step state under
+`/content/drive/MyDrive/json-ft-runs/persistent/benchmark/<run_name>/checkpoints/`
+and resumes from the next incomplete step when the fingerprint matches the
+current config and target. If the run name is reused with a different target or
+config fingerprint, it fails fast instead of mixing state.
+
+Render report from a saved bundle:
+
+```bash
+python /content/drive/MyDrive/json-ft-source/scripts/render_benchmark_report.py \
+  --bundle-path /content/drive/MyDrive/json-ft-runs/persistent/benchmark/vllm-benchmark-lab/bundle.json
+```
+
 ## Exact Staged Workflow
 
 The intended production-style sequence is now:
@@ -412,7 +455,22 @@ The intended production-style sequence is now:
    - inspect DPO loss and reward traces
    - evaluate SFT and DPO on the held-out manifest
    - build a consolidated baseline vs SFT vs DPO comparison report
-9. Pull the mirrored small artifacts back into the local repo with
+9. Run `scripts/build_benchmark_promptsets.py` to build deterministic natural
+   and stress promptsets from the held-out eval manifest.
+10. Run `scripts/benchmark_vllm.py` to:
+   - resolve the promoted target from `artifacts/checkpoints/latest_model.json`
+   - serve the model through the local vLLM OpenAI-compatible server
+   - run smoke, mixed-workload, and config-comparison experiments
+   - checkpoint each workload step under
+     `json-ft-runs/persistent/benchmark/<run_name>/checkpoints/`
+   - save raw logs, summary CSVs, correctness summaries, plots, and a markdown
+     report under `json-ft-runs/persistent/benchmark/<run_name>/`
+11. Open `notebooks/07_vllm_benchmark_lab.ipynb` as the final inference review
+   notebook. It reads the saved benchmark bundle and becomes the single
+   analysis surface for inference latency, throughput, prompt-length
+   interference, correctness tradeoffs, and partial-resume state when a run is
+   interrupted before the final bundle is written.
+12. Pull the mirrored small artifacts back into the local repo with
    `make drive-pull-artifacts`.
 
 ### DPO training command
@@ -478,9 +536,12 @@ This repository currently provides:
 - generated canonical, SFT, eval, and composition artifacts under
   `data/manifests/` and `artifacts/`
 - Colab runtime helpers for path resolution and latest-model tracking
+- a Colab-native vLLM serving and benchmarking stack with promptset building,
+  health checks, server-config sweeps, correctness spot checks, and report
+  rendering
 - runnable SFT and DPO training CLIs with dry-run validation
 - Colab-oriented notebooks for setup, data audit, baseline review, SFT review,
-  preference auditing, DPO review, and benchmarking
+  preference auditing, DPO review, and final inference analysis
 - consolidated three-stage comparison reporting across baseline, SFT, and DPO
 - local documentation for the data contract and evaluation plan
 - deterministic tests for schema validation, formatting, preference building,
@@ -488,5 +549,5 @@ This repository currently provides:
 
 It intentionally does not yet provide:
 
-- model benchmarking results
 - a real external raw-data integration
+- committed benchmark results

@@ -1,9 +1,98 @@
-# Inference and benchmarking placeholder.
-# model_name_or_path:
-# adapter_name_or_path:
-# served_backend:
-# served_endpoint:
-# benchmark_dataset_manifest:
-# concurrency_levels:
-# max_new_tokens:
+model_resolution:
+  latest_model_manifest: artifacts/checkpoints/latest_model.json
+  preferred_target: base_plus_lora
+  lora_alias: support-ticket-ft
+  fallback:
+    deployment_mode: base_plus_lora
+    base_model: Qwen/Qwen2.5-1.5B-Instruct
+    adapter_path: null
+    merged_model_path: null
 
+serving:
+  host: 127.0.0.1
+  port: 8000
+  api_base: http://127.0.0.1:8000
+  generation_config: vllm
+  dtype: auto
+  gpu_memory_utilization: 0.80
+  max_model_len: 2048
+  max_num_batched_tokens: 1024
+  max_num_seqs: 8
+  tensor_parallel_size: 1
+  health_timeout_seconds: 240
+  max_loras: 2
+  max_lora_rank: 64
+
+benchmark:
+  seed: 17
+  dataset_path: data/manifests/support_tickets_eval_manifest.jsonl
+  generation:
+    desired_max_tokens: 256
+    temperature: 0.0
+    top_p: 1.0
+    do_sample: false
+    measure_ttft: true
+    request_timeout_seconds: 180
+  promptsets:
+    dataset_path: data/manifests/support_tickets_eval_manifest.jsonl
+    tokenizer_name_or_path: null
+    seed: 17
+    natural_sample_limit: 1500
+    stress_sample_limit: 400
+    workload_sample_size: 240
+  budgeting:
+    max_model_len: 2048
+    desired_max_tokens: 256
+    minimum_output_tokens: 96
+    safety_margin_tokens: 32
+    trim_head_fraction: 0.55
+  correctness:
+    sample_size: 128
+    seed: 17
+  experiments:
+    smoke_single_stage:
+      enabled: true
+      sample_size: 32
+      concurrency_levels: [1, 4]
+    mixed_workload_baseline_sweep:
+      enabled: true
+      requests_per_run: 240
+      mixes:
+        - natural_mix_90_10_short_long
+        - natural_mix_70_30_short_long
+        - natural_mix_50_50_short_long
+        - stress_mix_50_50_natural_short_stress_long
+      concurrency_levels: [1, 2, 4, 8, 16, 24, 32]
+    bad_vs_tuned_server_config:
+      enabled: true
+      workload_mix: stress_mix_50_50_natural_short_stress_long
+      requests_per_run: 240
+      concurrency_levels: [1, 2, 4, 8, 16, 24, 32]
+      bad_config:
+        max_num_batched_tokens: 8192
+        max_num_seqs: 64
+        gpu_memory_utilization: 0.85
+      tuned_search:
+        workload_mix: stress_mix_50_50_natural_short_stress_long
+        concurrency: 16
+        requests_per_run: 120
+        gpu_memory_utilization: 0.92
+        rps_floor_ratio: 0.90
+        max_num_batched_tokens_values: [512, 768, 1024, 1536, 2048, 3072]
+        max_num_seqs_values: [8, 16, 24, 32, 48]
+    adapter_vs_merged_optional:
+      enabled: true
+      workload_mix: natural_mix_50_50_short_long
+      requests_per_run: 120
+      concurrency_levels: [1, 8, 16]
+      correctness_sample_size: 128
+
+artifacts:
+  benchmark_bundle_filename: bundle.json
+  request_log_filename: request_results.jsonl
+  summary_csv_filename: summary_rows.csv
+  summary_json_filename: summary_rows.json
+  correctness_csv_filename: correctness_rows.csv
+  correctness_json_filename: correctness_rows.json
+  config_search_csv_filename: config_search_rows.csv
+  config_search_json_filename: config_search_rows.json

@@ -32,6 +32,7 @@ train = [
   "trl>=0.8",
 ]
 inference = [
+  "matplotlib>=3.9",
   "transformers>=4.40",
   "vllm>=0.4",
 ]
